@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './Settings.module.css'
 import { useTheme } from '../hooks/useTheme'
@@ -6,9 +6,30 @@ import { useTheme } from '../hooks/useTheme'
 const Settings: React.FC = () => {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const [toMenu, setToMenu] = useState(false)
+  const backTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (backTimerRef.current !== null) {
+        window.clearTimeout(backTimerRef.current)
+      }
+    }
+  }, [])
+
+  const handleBackClick = () => {
+    if (toMenu) {
+      return
+    }
+
+    setToMenu(true)
+    backTimerRef.current = window.setTimeout(() => {
+      navigate('/')
+    }, 400)
+  }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${toMenu ? styles.toMenu : ''}`}>
       <div className={styles.checkeredFlag}>
         <svg viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
@@ -25,45 +46,51 @@ const Settings: React.FC = () => {
 
       <div className={styles.content}>
         <div className={styles.header}>
-          <button className={styles.backBtn} onClick={() => navigate('/')}>
+          <button className={styles.backBtn} onClick={handleBackClick}>
             ← Back
           </button>
           <h1 className={styles.title}>Settings</h1>
         </div>
 
-        <div className={styles.settingsCard}>
-          <h2>Display Settings</h2>
-          
-          <div className={styles.themeCard}>
-          <div className={styles.settingItem}>
-            <div className={styles.settingLabel}>
-              <h3>Theme</h3>
-              <p>Choose between light and dark mode for your Project Racing experience</p>
+        <div className={styles.cards}>
+          <div className={styles.settingsCard}>
+            <h2>Display Settings</h2>
+            
+            <div className={styles.themeCard}>
+            <div className={styles.settingItem}>
+              <div className={styles.settingLabel}>
+                <h3>Theme</h3>
+                <p>Choose between light and dark mode for your Project Racing experience</p>
+              </div>
+              <div className={styles.settingControl}>
+                <label className={styles.toggleSwitch}>
+                  <input 
+                    type="checkbox"
+                    checked={theme === 'dark'}
+                    onChange={toggleTheme}
+                    className={styles.toggleInput}
+                  />
+                  <span className={styles.toggleSlider}>
+                    <span className={styles.toggleLabel}>{theme === 'light' ? 'Light' : 'Dark'}</span>
+                  </span>
+                </label>
+              </div>
             </div>
-            <div className={styles.settingControl}>
-              <label className={styles.toggleSwitch}>
-                <input 
-                  type="checkbox"
-                  checked={theme === 'dark'}
-                  onChange={toggleTheme}
-                  className={styles.toggleInput}
-                />
-                <span className={styles.toggleSlider}>
-                  <span className={styles.toggleLabel}>{theme === 'light' ? 'Light' : 'Dark'}</span>
-                </span>
-              </label>
             </div>
           </div>
+
+          <div className={styles.settingsCard}>
+            <h2>About</h2>
+            <div className={styles.aboutContent}>
+              <p><strong>Project Racing</strong></p>
+              <p>A web-based team management game</p>
+            </div>
           </div>
         </div>
 
-        <div className={styles.settingsCard}>
-          <h2>About</h2>
-          <div className={styles.aboutContent}>
-            <p><strong>Project Racing</strong></p>
-            <p>Version: 0.1.0 (Pre-Alpha)</p>
-            <p>A web-based team management game</p>
-          </div>
+        <div className={styles.footer}>
+          <div className={styles.version}>v0.1.0 - Pre-Alpha</div>
+          <div className={styles.copyright}>© Project Racing</div>
         </div>
       </div>
     </div>

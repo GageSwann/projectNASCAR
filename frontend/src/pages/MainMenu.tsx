@@ -1,12 +1,33 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './MainMenu.module.css'
 
 const MainMenu: React.FC = () => {
   const navigate = useNavigate()
+  const [toSettings, setToSettings] = useState(false)
+  const settingsTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (settingsTimerRef.current !== null) {
+        window.clearTimeout(settingsTimerRef.current)
+      }
+    }
+  }, [])
+
+  const handleSettingsClick = () => {
+    if (toSettings) {
+      return
+    }
+
+    setToSettings(true)
+    settingsTimerRef.current = window.setTimeout(() => {
+      navigate('/settings')
+    }, 400)
+  }
 
   return (
-    <div className={styles.menuContainer}>
+    <div className={`${styles.menuContainer} ${toSettings ? styles.toSettings : ''}`}>
       <div className={styles.checkeredFlag}>
         <svg viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
@@ -40,7 +61,7 @@ const MainMenu: React.FC = () => {
           </button>
           <button 
             className={styles.menuButton}
-            onClick={() => navigate('/settings')}
+            onClick={handleSettingsClick}
           >
             Settings
           </button>
