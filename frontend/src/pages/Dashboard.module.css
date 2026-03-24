@@ -1,0 +1,302 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border-bottom: 2px solid var(--border-color);
+  padding: clamp(1rem, 4vw, 2rem);
+  margin-bottom: clamp(1.5rem, 4vw, 2rem);
+}
+
+.headerContent {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: clamp(1rem, 3vw, 2rem);
+}
+
+.headerContent h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: clamp(2rem, 8vw, 2.5rem);
+  color: var(--text-primary);
+}
+
+.playerName {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: clamp(0.9rem, 2vw, 1rem);
+}
+
+.headerStats {
+  display: flex;
+  gap: clamp(1rem, 4vw, 2rem);
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.label {
+  font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.25rem;
+}
+
+.value {
+  font-size: clamp(1.3rem, 3vw, 1.5rem);
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.tabNav {
+  display: flex;
+  gap: var(--spacing-md);
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+  margin-bottom: clamp(1.5rem, 4vw, 2rem);
+  border-bottom: 2px solid var(--border-color);
+  overflow-x: auto;
+}
+
+.tab {
+  padding: var(--spacing-md) clamp(1rem, 2vw, 1.5rem);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--transition-base);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-size: clamp(0.9rem, 1.5vw, 1rem);
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.content {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 clamp(1rem, 4vw, 2rem) clamp(1rem, 4vw, 2rem);
+  flex: 1;
+}
+
+.section h2 {
+  font-size: clamp(1.5rem, 5vw, 1.8rem);
+  margin: 0 0 clamp(1rem, 3vw, 1.5rem) 0;
+  color: var(--text-primary);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(180px, 80vw, 200px), 1fr));
+  gap: clamp(1rem, 3vw, 1.5rem);
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: clamp(1rem, 3vw, 1.5rem);
+  text-align: center;
+  transition: all var(--transition-base);
+}
+
+.statCard:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-color-hover);
+  transform: translateY(-4px);
+}
+
+.statCard h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+.statValue {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.quickActions {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.5rem, 4vw, 2rem);
+  margin-bottom: clamp(1.5rem, 4vw, 2rem);
+}
+
+.quickActions h3 {
+  margin: 0 0 clamp(1rem, 3vw, 1.5rem) 0;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  font-size: clamp(1rem, 2vw, 1.1rem);
+  letter-spacing: 1px;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(130px, 80vw, 150px), 1fr));
+  gap: var(--spacing-md);
+}
+
+.actionBtn {
+  padding: clamp(0.75rem, 2vw, 1rem);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+}
+
+.actionBtn:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-color: var(--text-primary);
+  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+}
+
+.driversList,
+.racesList,
+.budgetInfo {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.5rem, 4vw, 2rem);
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder {
+  color: var(--text-muted);
+  font-size: clamp(1rem, 2vw, 1.1rem);
+  text-align: center;
+  margin: 0;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  padding: clamp(1rem, 5vw, 2rem);
+}
+
+.emptyState h2 {
+  font-size: clamp(1.8rem, 6vw, 2rem);
+  margin-bottom: clamp(0.75rem, 2vw, 1rem);
+  color: var(--text-primary);
+}
+
+.emptyState p {
+  color: var(--text-muted);
+  font-size: clamp(1rem, 2vw, 1.1rem);
+  margin-bottom: clamp(1.5rem, 3vw, 2rem);
+}
+
+.emptyState button {
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 4vw, 2rem);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.emptyState button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.15);
+}
+
+.footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  padding: clamp(1rem, 4vw, 2rem);
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.menuBtn {
+  padding: 0.75rem clamp(1rem, 2vw, 1.5rem);
+  background: transparent;
+  border: 2px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--transition-base);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+}
+
+.menuBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--text-primary);
+}
+
+@media (max-width: 1024px) {
+  .headerContent {
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  .headerStats {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionGrid {
+    grid-template-columns: 1fr;
+  }
+}
