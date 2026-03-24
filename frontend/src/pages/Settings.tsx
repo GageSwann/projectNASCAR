@@ -34,6 +34,7 @@ const Settings: React.FC = () => {
         <div className={styles.settingsCard}>
           <h2>Display Settings</h2>
           
+          <div className={styles.themeCard}>
           <div className={styles.settingItem}>
             <div className={styles.settingLabel}>
               <h3>Theme</h3>
@@ -52,6 +53,7 @@ const Settings: React.FC = () => {
                 </span>
               </label>
             </div>
+          </div>
           </div>
         </div>
 

@@ -40,12 +40,15 @@
 }
 
 .header {
-  text-align: center;
-  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-sm);
   animation: slideDown 0.6s ease-out;
   position: relative;
   z-index: 10;
-  min-height: clamp(2.4rem, 6vw, 3.4rem);
+  padding-block: var(--spacing-sm);
+  padding-inline: clamp(160px, 36vw, 210px);
 }
 
 @keyframes slideDown {
@@ -61,13 +64,14 @@
 
 .title {
   font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
   margin: 0;
   color: var(--text-primary);
 }
 
 .backBtn {
-  padding: clamp(0.5rem, 1.4vw, 0.7rem) clamp(1rem, 2.4vw, 1.5rem);
-  font-size: clamp(0.75rem, 1.6vw, 0.9rem);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
   font-weight: 600;
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -76,12 +80,12 @@
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 2px;
-  width: clamp(150px, 34vw, 190px);
+  width: fit-content;
   white-space: nowrap;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   position: absolute;
   top: 50%;
-  left: 0;
+  left: var(--spacing-sm);
   transform: translateY(-50%);
   overflow: hidden;
   transition: color 0.6s ease;
@@ -233,7 +237,7 @@
 }
 
 .toggleInput:checked + .toggleSlider {
-  background: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
 .toggleSlider::before {
@@ -249,7 +253,7 @@
 
 .toggleInput:checked + .toggleSlider::before {
   left: calc(100% - 27px);
-  background: var(--bg-primary);
+  background: var(--text-primary);
 }
 
 .toggleLabel {
@@ -295,6 +299,13 @@
   color: var(--text-secondary);
   font-size: 1.1rem;
   font-weight: 500;
+}
+
+.themeCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
 }
 
 .aboutContent {
