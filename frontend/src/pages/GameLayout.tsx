@@ -96,7 +96,14 @@ const GameLayout: React.FC = () => {
             className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}
           >
             <span className={styles.navIcon}>&#9650;</span>
-            <span className={styles.navLabel}>Rankings</span>
+            <span className={styles.navLabel}>Standings</span>
+          </NavLink>
+          <NavLink
+            to="/game/power-rankings"
+            className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}
+          >
+            <span className={styles.navIcon}>&#9889;</span>
+            <span className={styles.navLabel}>Power Rankings</span>
           </NavLink>
           <NavLink
             to="/game/drivers"

@@ -140,6 +140,76 @@
   color: var(--text-primary);
 }
 
+.editIcon {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.detailName:hover .editIcon {
+  opacity: 1;
+}
+
+.renameRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.renameInput {
+  font-size: 1.2rem;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  width: 200px;
+}
+
+.renameInput:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
+.renameSave,
+.renameCancel {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.renameSave {
+  background: transparent;
+  border: 1px solid #4caf50;
+  color: #4caf50;
+}
+
+.renameSave:hover {
+  background: #4caf50;
+  color: var(--bg-primary);
+}
+
+.renameCancel {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+.renameCancel:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
 .detailMeta {
   display: flex;
   align-items: center;

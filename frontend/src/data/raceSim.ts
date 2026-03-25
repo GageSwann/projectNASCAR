@@ -4,6 +4,7 @@ import {
   StandingsEntry,
 } from '../types'
 import { getTrackType } from './tracks'
+import { generateAIField, AICarEntry, driverBaseStrength } from './aiTeams'
 
 // 2026 NASCAR Points Format
 // Finish: 1st=40, 2nd=35, then 34,33,32,...1
@@ -70,12 +71,14 @@ function computeCarRating(chassis: Chassis | undefined) {
 interface EntrantStats {
   driverId: number
   driverName: string
+  carNumber: string
   teamName: string
+  manufacturer: string
   isPlayer: boolean
-  strength: number // composite score used for sim
-  reliabilityChance: number // chance of mechanical DNF (lower = more likely)
-  wreckChance: number // chance of wreck DNF
-  pitErrorChance: number // chance of pit error
+  strength: number
+  reliabilityChance: number
+  wreckChance: number
+  pitErrorChance: number
 }
 
 function getDriverTrackBonus(driver: MarketDriver, trackType: TrackType): number {
@@ -129,7 +132,9 @@ function computePlayerStats(save: SaveSlotData, trackType: TrackType): EntrantSt
   return {
     driverId: driver.id,
     driverName: `${driver.firstName} ${driver.lastName}`,
+    carNumber: save.carNumber || '1',
     teamName: save.selectedTeam?.name ?? 'Player Team',
+    manufacturer: save.selectedTeam?.manufacturer ?? 'Chevrolet',
     isPlayer: true,
     strength,
     reliabilityChance,
@@ -138,87 +143,48 @@ function computePlayerStats(save: SaveSlotData, trackType: TrackType): EntrantSt
   }
 }
 
-// ---- AI entrants (other drivers in the field) ----
-interface AITemplate {
-  name: string
-  team: string
-  baseStrength: number
+// ---- AI entrant stats computed from MarketDriver attributes ----
+function computeAIStats(entry: AICarEntry, trackType: TrackType): EntrantStats {
+  const d = entry.driver
+  const trackBonus = getDriverTrackBonus(d, trackType)
+  const driverScore = (d.pace * 0.35 + d.racecraft * 0.25 + d.consistency * 0.25 + trackBonus * 0.15)
+  // AI cars get a car rating based on team strength (derived from driver tier)
+  const base = driverBaseStrength(d)
+  const carScore = base * 0.85 + 10 // correlated with team quality
+  const strength = driverScore * 0.50 + carScore * 0.30 + 40 * 0.10 + 30 * 0.10
+
+  const reliabilityChance = clamp((base + 10) / 110, 0.4, 0.95)
+  const wreckResist = (d.racecraft * 0.5 + d.consistency * 0.3 + 30 * 0.2) / 100
+  const pitAccuracy = 0.6 + (base / 100) * 0.3
+
+  return {
+    driverId: d.id,
+    driverName: `${d.firstName} ${d.lastName}`,
+    carNumber: entry.carNumber,
+    teamName: entry.teamName,
+    manufacturer: entry.manufacturer,
+    isPlayer: false,
+    strength,
+    reliabilityChance,
+    wreckChance: 1 - wreckResist,
+    pitErrorChance: 1 - pitAccuracy,
+  }
 }
 
-const AI_FIELDS: Record<number, AITemplate[]> = {
-  1: [
-    { name: 'Jake Colton', team: 'Ironhide Motorsports', baseStrength: 82 },
-    { name: 'Marcus Dell', team: 'Ironhide Motorsports', baseStrength: 78 },
-    { name: 'Ricky Tanner', team: 'Prairie Fire Racing', baseStrength: 80 },
-    { name: 'Liam Sutherland', team: 'Prairie Fire Racing', baseStrength: 76 },
-    { name: 'Devon Blake', team: 'Gravel Road Motorsports', baseStrength: 77 },
-    { name: 'Cody Harlan', team: 'Gravel Road Motorsports', baseStrength: 74 },
-    { name: 'Brett Whitaker', team: 'Longhorn Racing', baseStrength: 73 },
-    { name: 'Tyler Hess', team: 'Longhorn Racing', baseStrength: 71 },
-    { name: 'Shane Rivera', team: 'Bison Motorsports', baseStrength: 65 },
-    { name: 'Noah Craig', team: 'Bison Motorsports', baseStrength: 63 },
-    { name: 'Dylan Fox', team: 'Ridgeline Racing', baseStrength: 62 },
-    { name: 'Garrett Price', team: 'Ridgeline Racing', baseStrength: 60 },
-    { name: 'Chase Morrow', team: 'Stampede Motors', baseStrength: 58 },
-    { name: 'Bryce Langston', team: 'Stampede Motors', baseStrength: 56 },
-    { name: 'Austin Crane', team: 'Bedrock Racing', baseStrength: 54 },
-    { name: 'Wyatt Doyle', team: 'Bedrock Racing', baseStrength: 52 },
-    { name: 'Trent Marsh', team: 'Canyon Run Racing', baseStrength: 46 },
-    { name: 'Colby Voss', team: 'Canyon Run Racing', baseStrength: 44 },
-    { name: 'Jesse Pruitt', team: 'Timberline Motorsports', baseStrength: 42 },
-  ],
-  2: [
-    { name: 'Elias Mercer', team: 'Catalyst Motorsports', baseStrength: 86 },
-    { name: 'Adrian Stone', team: 'Catalyst Motorsports', baseStrength: 83 },
-    { name: 'Nathan Cross', team: 'Pinnacle Racing', baseStrength: 85 },
-    { name: 'Ryan Ashworth', team: 'Pinnacle Racing', baseStrength: 81 },
-    { name: 'Caleb Raines', team: 'Summit Racing Corp', baseStrength: 80 },
-    { name: 'Reid Holden', team: 'Summit Racing Corp', baseStrength: 78 },
-    { name: 'Grant Kelley', team: 'Momentum Racing', baseStrength: 76 },
-    { name: 'Miles Dunn', team: 'Momentum Racing', baseStrength: 74 },
-    { name: 'Owen Barrett', team: 'Frontier Motorsports', baseStrength: 73 },
-    { name: 'Spencer Mack', team: 'Frontier Motorsports', baseStrength: 71 },
-    { name: 'Ian Walsh', team: 'Aurora Motorsports', baseStrength: 65 },
-    { name: 'Victor Kemp', team: 'Aurora Motorsports', baseStrength: 63 },
-    { name: 'Leo Yates', team: 'Nexus Racing', baseStrength: 61 },
-    { name: 'Felix Harper', team: 'Nexus Racing', baseStrength: 59 },
-    { name: 'Jared Quinn', team: 'Paradigm Racing', baseStrength: 57 },
-    { name: 'Drew Vaughn', team: 'Paradigm Racing', baseStrength: 55 },
-    { name: 'Kent Abbott', team: 'Zenith Motorsports', baseStrength: 52 },
-    { name: 'Dale Norris', team: 'Zenith Motorsports', baseStrength: 50 },
-    { name: 'Troy Gibson', team: 'Benchmark Racing', baseStrength: 48 },
-    { name: 'Seth Lambert', team: 'Benchmark Racing', baseStrength: 46 },
-    { name: 'Aiden Cole', team: 'Ascent Racing', baseStrength: 44 },
-    { name: 'Bryan Wells', team: 'Forge Motorsports', baseStrength: 42 },
-    { name: 'Derek Lane', team: 'Horizon Racing', baseStrength: 40 },
-  ],
-  3: [
-    { name: 'Maxwell Sterling', team: 'Velocity Racing', baseStrength: 90 },
-    { name: 'Dante Vega', team: 'Velocity Racing', baseStrength: 87 },
-    { name: 'Carter Brooks', team: 'Legacy Motorsports', baseStrength: 89 },
-    { name: 'Roman Webb', team: 'Legacy Motorsports', baseStrength: 85 },
-    { name: 'Jackson Pierce', team: 'Elite Performance', baseStrength: 86 },
-    { name: 'Blake Thornton', team: 'Elite Performance', baseStrength: 83 },
-    { name: 'Dominic Hayes', team: 'Thunder Motors', baseStrength: 84 },
-    { name: 'Asher Cole', team: 'Thunder Motors', baseStrength: 81 },
-    { name: 'Nolan Shaw', team: 'Apex Racing', baseStrength: 82 },
-    { name: 'Reed Dixon', team: 'Apex Racing', baseStrength: 79 },
-    { name: 'Gage Russell', team: 'Overdrive Motorsports', baseStrength: 70 },
-    { name: 'Everett Flynn', team: 'Overdrive Motorsports', baseStrength: 68 },
-    { name: 'Kyle Jensen', team: 'Apex Grand Racing', baseStrength: 67 },
-    { name: 'Brock Palmer', team: 'Apex Grand Racing', baseStrength: 65 },
-    { name: 'Zane Mitchell', team: 'Ironclad Motorsports', baseStrength: 64 },
-    { name: 'Finn Barrett', team: 'Ironclad Motorsports', baseStrength: 62 },
-    { name: 'Luke Hawkins', team: 'Titanium Racing', baseStrength: 61 },
-    { name: 'Penn Archer', team: 'Titanium Racing', baseStrength: 59 },
-    { name: 'Dean Crawford', team: 'Vanguard Racing', baseStrength: 58 },
-    { name: 'Hugh Kendall', team: 'Vanguard Racing', baseStrength: 56 },
-    { name: 'Liam Roth', team: 'Spectra Racing', baseStrength: 52 },
-    { name: 'Mason Cole', team: 'Radiant Motorsports', baseStrength: 50 },
-    { name: 'Noah Grant', team: 'Prism Racing', baseStrength: 48 },
-    { name: 'Ethan Wood', team: 'Meridian Racing', baseStrength: 46 },
-    { name: 'Owen Hunt', team: 'Equinox Motorsports', baseStrength: 44 },
-  ],
+// Module-level AI field cache (regenerated per series, persists across races in a session)
+let _cachedAIField: AICarEntry[] | null = null
+let _cachedSeriesId: number = -1
+let _cachedExclude: string = ''
+
+export function getAIField(seriesId: number, excludeNumbers: Set<string> = new Set()): AICarEntry[] {
+  const excludeKey = [...excludeNumbers].sort().join(',')
+  if (_cachedAIField && _cachedSeriesId === seriesId && _cachedExclude === excludeKey) {
+    return _cachedAIField
+  }
+  _cachedAIField = generateAIField(seriesId, excludeNumbers)
+  _cachedSeriesId = seriesId
+  _cachedExclude = excludeKey
+  return _cachedAIField
 }
 
 export function simulateRace(
@@ -240,22 +206,18 @@ export function simulateRace(
   const playerStats = computePlayerStats(save, trackType)
   entrants.push({ ...playerStats, raceScore: 0 })
 
-  // AI entries
-  const aiField = AI_FIELDS[seriesId] ?? AI_FIELDS[3]
-  for (const ai of aiField) {
-    // Filter out AI drivers from the player's own team
-    if (ai.team === save.selectedTeam?.name) continue
-    const variation = (r() - 0.5) * 6 // ±3 race-day variation (reduced for balance)
-    const strength = clamp(ai.baseStrength + variation, 20, 99)
+  // AI entries — use the full AICarEntry system
+  const playerNumbers = new Set<string>()
+  if (save.carNumber) playerNumbers.add(save.carNumber)
+  const aiField = getAIField(seriesId, playerNumbers)
+  for (const entry of aiField) {
+    // Skip AI cars from the player's own team
+    if (entry.teamName === save.selectedTeam?.name) continue
+    const aiStats = computeAIStats(entry, trackType)
+    const variation = (r() - 0.5) * 6
     entrants.push({
-      driverId: aiField.indexOf(ai) + 9000,
-      driverName: ai.name,
-      teamName: ai.team,
-      isPlayer: false,
-      strength,
-      reliabilityChance: 0.6 + r() * 0.35,
-      wreckChance: 0.08 + (1 - ai.baseStrength / 100) * 0.12,
-      pitErrorChance: 0.05 + (1 - ai.baseStrength / 100) * 0.1,
+      ...aiStats,
+      strength: clamp(aiStats.strength + variation, 20, 99),
       raceScore: 0,
     })
   }
@@ -295,7 +257,9 @@ export function simulateRace(
     results.push({
       driverId: e.driverId,
       driverName: e.driverName,
+      carNumber: e.carNumber,
       teamName: e.teamName,
+      manufacturer: e.manufacturer,
       startPos: 0,
       finishPos: 0,
       lapsCompleted,
@@ -370,7 +334,9 @@ export function updateStandings(
       entry = {
         driverId: result.driverId,
         driverName: result.driverName,
+        carNumber: result.carNumber,
         teamName: result.teamName,
+        manufacturer: result.manufacturer,
         points: 0,
         wins: 0,
         top5: 0,
@@ -394,26 +360,32 @@ export function updateStandings(
   return standings
 }
 
-export function initializeStandings(seriesId: number, playerDriverId: number, playerDriverName: string, playerTeamName: string): StandingsEntry[] {
-  const aiField = AI_FIELDS[seriesId] ?? AI_FIELDS[3]
+export function initializeStandings(seriesId: number, playerDriverId: number, playerDriverName: string, playerTeamName: string, playerCarNumber: string = '1', playerManufacturer: string = 'Chevrolet'): StandingsEntry[] {
+  const aiField = getAIField(seriesId)
   const standings: StandingsEntry[] = [
     {
       driverId: playerDriverId,
       driverName: playerDriverName,
+      carNumber: playerCarNumber,
       teamName: playerTeamName,
+      manufacturer: playerManufacturer,
       points: 0, wins: 0, top5: 0, top10: 0, dnfs: 0, stagePoints: 0,
       isPlayer: true,
     },
   ]
-  for (const ai of aiField) {
+  for (const entry of aiField) {
     standings.push({
-      driverId: aiField.indexOf(ai) + 9000,
-      driverName: ai.name,
-      teamName: ai.team,
+      driverId: entry.driver.id,
+      driverName: `${entry.driver.firstName} ${entry.driver.lastName}`,
+      carNumber: entry.carNumber,
+      teamName: entry.teamName,
+      manufacturer: entry.manufacturer,
       points: 0, wins: 0, top5: 0, top10: 0, dnfs: 0, stagePoints: 0,
       isPlayer: false,
     })
   }
+  // Sort alphabetically by driver name for pre-season display
+  standings.sort((a, b) => a.driverName.localeCompare(b.driverName))
   return standings
 }
 
@@ -434,27 +406,13 @@ export function applyTalentProgression(
     }
   }
 
-  // Apply to AI drivers (modifies baseStrength in AI_FIELDS)
+  // Apply to AI drivers (modifies attributes on the cached AI field)
   const seriesId = save.selectedSeries?.id ?? 3
-  const aiField = AI_FIELDS[seriesId] ?? AI_FIELDS[3]
-  for (const ai of aiField) {
-    const aiIdx = aiField.indexOf(ai)
-    const aiResult = raceResult.driverResults.find(r => r.driverId === aiIdx + 9000)
+  const aiField = getAIField(seriesId)
+  for (const entry of aiField) {
+    const aiResult = raceResult.driverResults.find(r => r.driverId === entry.driver.id)
     if (!aiResult) continue
-
-    // AI progression: adjust baseStrength based on finish
-    const posRatio = aiResult.finishPos / fieldSize
-    let delta = 0
-    if (aiResult.status !== 'running') {
-      delta = -0.3 // DNF penalty
-    } else if (posRatio <= 0.1) {
-      delta = 0.4 // Top 10% → improve
-    } else if (posRatio <= 0.3) {
-      delta = 0.15 // Top 30% → slight improve
-    } else if (posRatio > 0.7) {
-      delta = -0.2 // Bottom 30% → slight decline
-    }
-    ai.baseStrength = clamp(ai.baseStrength + delta, 30, 95)
+    applyDriverProgression(entry.driver, aiResult, trackType, fieldSize)
   }
 }
 

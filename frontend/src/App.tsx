@@ -12,6 +12,7 @@ import Overview from './pages/game/Overview'
 import Garage from './pages/game/Garage'
 import Store from './pages/game/Store'
 import Rankings from './pages/game/Rankings'
+import PowerRankings from './pages/game/PowerRankings'
 import Drivers from './pages/game/Drivers'
 import Staff from './pages/game/Staff'
 import RaceDay from './pages/game/RaceDay'
@@ -52,6 +53,7 @@ function App() {
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="calendar" element={<Calendar />} />
                 <Route path="rankings" element={<Rankings />} />
+                <Route path="power-rankings" element={<PowerRankings />} />
                 <Route path="drivers" element={<Drivers />} />
                 <Route path="staff" element={<Staff />} />
                 <Route path="race" element={<RaceDay />} />

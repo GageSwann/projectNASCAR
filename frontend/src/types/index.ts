@@ -356,7 +356,9 @@ export interface SeasonRaceResult {
 export interface DriverRaceResult {
   driverId: number;
   driverName: string;
+  carNumber: string;
   teamName: string;
+  manufacturer: string;
   startPos: number;
   finishPos: number;
   lapsCompleted: number;
@@ -371,7 +373,9 @@ export interface DriverRaceResult {
 export interface StandingsEntry {
   driverId: number;
   driverName: string;
+  carNumber: string;
   teamName: string;
+  manufacturer: string;
   points: number;
   wins: number;
   top5: number;
@@ -385,6 +389,7 @@ export interface StandingsEntry {
 export interface OwnerStandingsEntry {
   carNumber: string;
   teamName: string;
+  manufacturer: string;
   points: number;
   wins: number;
   top5: number;

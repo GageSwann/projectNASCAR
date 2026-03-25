@@ -23,8 +23,10 @@ const Rankings: React.FC = () => {
         <div className={styles.table}>
           <div className={styles.tableHeader}>
             <span className={styles.colRank}>#</span>
+            <span className={styles.colNum}>#</span>
             <span className={styles.colDriver}>Driver</span>
             <span className={styles.colTeam}>Team</span>
+            <span className={styles.colMfr}>MFR</span>
             <span className={styles.colPts}>PTS</span>
             <span className={styles.colW}>W</span>
             <span className={styles.colT5}>T5</span>
@@ -46,8 +48,10 @@ const Rankings: React.FC = () => {
                       {rank}
                     </span>
                   </span>
+                  <span className={styles.colNum}>{entry.carNumber}</span>
                   <span className={styles.colDriver}>{entry.driverName}</span>
                   <span className={styles.colTeam}>{entry.teamName}</span>
+                  <span className={styles.colMfr}>{entry.manufacturer}</span>
                   <span className={styles.colPts}>{entry.points}</span>
                   <span className={styles.colW}>{entry.wins}</span>
                   <span className={styles.colT5}>{entry.top5}</span>

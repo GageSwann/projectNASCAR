@@ -39,6 +39,8 @@ const Garage: React.FC = () => {
   const { saveData, refreshSave } = useOutletContext<GameContext>()
   const [chassisList, setChassisList] = useState<Chassis[]>(saveData.chassis)
   const [selected, setSelected] = useState<Chassis | null>(null)
+  const [editingName, setEditingName] = useState(false)
+  const [nameInput, setNameInput] = useState('')
 
   // Get installed categories for the selected chassis
   const installedCategories = (c: Chassis): Set<ItemCategory> => {
@@ -153,6 +155,28 @@ const Garage: React.FC = () => {
 
   const isFullyEquipped = (c: Chassis) => missingCategories(c).length === 0
 
+  const handleRename = (chassis: Chassis) => {
+    const trimmed = nameInput.trim()
+    if (!trimmed || trimmed === chassis.name) {
+      setEditingName(false)
+      return
+    }
+    const slotId = getActiveSlotId()
+    if (!slotId) return
+    const data = loadSlot(slotId)
+    if (!data) return
+
+    const updatedChassis = chassisList.map(ch =>
+      ch.id === chassis.id ? { ...ch, name: trimmed } : ch
+    )
+    data.chassis = updatedChassis
+    saveSlot(data)
+    setChassisList(updatedChassis)
+    setSelected(updatedChassis.find(ch => ch.id === chassis.id) ?? null)
+    setEditingName(false)
+    refreshSave()
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
@@ -197,7 +221,29 @@ const Garage: React.FC = () => {
             <>
               <div className={styles.detailHeader}>
                 <div>
-                  <h2 className={styles.detailName}>{selected.name}</h2>
+                  {editingName ? (
+                    <div className={styles.renameRow}>
+                      <input
+                        className={styles.renameInput}
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleRename(selected); if (e.key === 'Escape') setEditingName(false) }}
+                        autoFocus
+                        maxLength={40}
+                      />
+                      <button className={styles.renameSave} onClick={() => handleRename(selected)}>Save</button>
+                      <button className={styles.renameCancel} onClick={() => setEditingName(false)}>Cancel</button>
+                    </div>
+                  ) : (
+                    <h2
+                      className={styles.detailName}
+                      onClick={() => { setEditingName(true); setNameInput(selected.name) }}
+                      title="Click to rename"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {selected.name} <span className={styles.editIcon}>✎</span>
+                    </h2>
+                  )}
                   <div className={styles.detailMeta}>
                     <span
                       className={styles.detailStatus}

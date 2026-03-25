@@ -61,6 +61,7 @@ const Calendar: React.FC = () => {
   const currentDateObj = new Date(currentDate + 'T12:00:00')
   const [viewMonth, setViewMonth] = useState(currentDateObj.getMonth())
   const [selectedRace, setSelectedRace] = useState<RaceInfo | null>(null)
+  const [pendingSimDate, setPendingSimDate] = useState<string | null>(null)
 
   const year = currentDateObj.getFullYear()
 
@@ -251,10 +252,10 @@ const Calendar: React.FC = () => {
                     if (cell.race) {
                       setSelectedRace(cell.race)
                     } else if (isFuture && cell.day > 0) {
-                      simToDate(dateStr)
+                      setPendingSimDate(dateStr)
                     }
                   }}
-                  title={isFuture && !cell.race ? `Sim to ${dateStr}` : undefined}
+                  title={isFuture && !cell.race ? `Click to sim to ${dateStr}` : undefined}
                 >
                   {cell.day > 0 && (
                     <>
@@ -335,7 +336,7 @@ const Calendar: React.FC = () => {
                 }
               </div>
               {selectedRace.date > currentDate && (
-                <button className={styles.simToRaceBtn} onClick={() => simToDate(selectedRace.date)}>
+                <button className={styles.simToRaceBtn} onClick={() => setPendingSimDate(selectedRace.date)}>
                   Sim to Race Day
                 </button>
               )}
@@ -381,7 +382,7 @@ const Calendar: React.FC = () => {
                   {!isPast && !isToday && (
                     <span
                       className={styles.schedSimBtn}
-                      onClick={(e) => { e.stopPropagation(); simToDate(race.date) }}
+                      onClick={(e) => { e.stopPropagation(); setPendingSimDate(race.date) }}
                       title="Sim to this race"
                     >
                       ▶
@@ -393,6 +394,28 @@ const Calendar: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Sim Confirm Popup */}
+      {pendingSimDate && (
+        <div className={styles.confirmOverlay} onClick={() => setPendingSimDate(null)}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.confirmTitle}>Simulate Time</h3>
+            <p className={styles.confirmText}>
+              Advance to <strong>{formatDateFull(pendingSimDate)}</strong>?
+            </p>
+            <p className={styles.confirmDays}>
+              {(() => {
+                const diff = Math.ceil((new Date(pendingSimDate + 'T12:00:00').getTime() - new Date(currentDate + 'T12:00:00').getTime()) / 86400000)
+                return `${diff} day${diff !== 1 ? 's' : ''} will pass`
+              })()}
+            </p>
+            <div className={styles.confirmBtns}>
+              <button className={styles.confirmCancel} onClick={() => setPendingSimDate(null)}>Cancel</button>
+              <button className={styles.confirmOk} onClick={() => { simToDate(pendingSimDate); setPendingSimDate(null) }}>Simulate</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

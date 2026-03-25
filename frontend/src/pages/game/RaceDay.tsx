@@ -29,11 +29,12 @@ function updateOwnerStandings(
   result: { driverResults: DriverRaceResult[] },
   playerCarNumber: string,
   playerTeamName: string,
+  playerManufacturer: string,
 ): OwnerStandingsEntry[] {
   // Ensure player entry exists
   let list = [...standings]
   if (!list.find(e => e.isPlayer)) {
-    list.push({ carNumber: playerCarNumber, teamName: playerTeamName, points: 0, wins: 0, top5: 0, top10: 0, dnfs: 0, isPlayer: true })
+    list.push({ carNumber: playerCarNumber, teamName: playerTeamName, manufacturer: playerManufacturer, points: 0, wins: 0, top5: 0, top10: 0, dnfs: 0, isPlayer: true })
   }
 
   const pResult = result.driverResults.find(r => r.isPlayer)
@@ -51,7 +52,7 @@ function updateOwnerStandings(
   for (const ai of aiResults) {
     let entry = list.find(e => !e.isPlayer && e.teamName === ai.teamName)
     if (!entry) {
-      entry = { carNumber: String(list.length + 1), teamName: ai.teamName, points: 0, wins: 0, top5: 0, top10: 0, dnfs: 0, isPlayer: false }
+      entry = { carNumber: ai.carNumber, teamName: ai.teamName, manufacturer: ai.manufacturer, points: 0, wins: 0, top5: 0, top10: 0, dnfs: 0, isPlayer: false }
       list.push(entry)
     }
     entry.points += ai.pointsEarned
@@ -99,6 +100,7 @@ const RaceDay: React.FC = () => {
   const [phase, setPhase] = useState<Phase>('pre')
   const [raceResult, setRaceResult] = useState<DriverRaceResult[] | null>(null)
   const [playerResult, setPlayerResult] = useState<DriverRaceResult | null>(null)
+  const [showSkipWarning, setShowSkipWarning] = useState(false)
 
   // Readiness checks
   const hasDriver = !!saveData.hiredDriver
@@ -127,7 +129,14 @@ const RaceDay: React.FC = () => {
       let standings = freshSave.standings ?? []
       if (standings.length === 0 && freshSave.hiredDriver) {
         const driverName = `${freshSave.hiredDriver.firstName} ${freshSave.hiredDriver.lastName}`
-        standings = initializeStandings(seriesId, freshSave.hiredDriver.id, driverName, freshSave.selectedTeam?.name ?? 'Player Team')
+        standings = initializeStandings(
+          seriesId,
+          freshSave.hiredDriver.id,
+          driverName,
+          freshSave.selectedTeam?.name ?? 'Player Team',
+          freshSave.carNumber || '1',
+          freshSave.selectedTeam?.manufacturer ?? 'Chevrolet',
+        )
       }
 
       const result = simulateRace(freshSave, race.track, race.round, race.laps, race.purse)
@@ -142,7 +151,7 @@ const RaceDay: React.FC = () => {
 
         // Update owner standings
         let ownerStandings = freshSave.ownerStandings ?? []
-        ownerStandings = updateOwnerStandings(ownerStandings, result, freshSave.carNumber || '1', freshSave.selectedTeam?.name ?? 'Player Team')
+        ownerStandings = updateOwnerStandings(ownerStandings, result, freshSave.carNumber || '1', freshSave.selectedTeam?.name ?? 'Player Team', freshSave.selectedTeam?.manufacturer ?? 'Chevrolet')
         freshSave.ownerStandings = ownerStandings
       } else {
         freshSave.standings = standings
@@ -192,6 +201,73 @@ const RaceDay: React.FC = () => {
 
   const handleContinue = () => {
     navigate('/game')
+  }
+
+  const handleSkipRace = () => {
+    setShowSkipWarning(false)
+    setPhase('simming')
+
+    setTimeout(() => {
+      const slotId = getActiveSlotId()
+      if (!slotId) return
+      const freshSave = loadSlot(slotId)
+      if (!freshSave) return
+
+      // Initialize standings if empty
+      let standings = freshSave.standings ?? []
+      if (standings.length === 0 && freshSave.hiredDriver) {
+        const driverName = `${freshSave.hiredDriver.firstName} ${freshSave.hiredDriver.lastName}`
+        standings = initializeStandings(
+          seriesId,
+          freshSave.hiredDriver.id,
+          driverName,
+          freshSave.selectedTeam?.name ?? 'Player Team',
+          freshSave.carNumber || '1',
+          freshSave.selectedTeam?.manufacturer ?? 'Chevrolet',
+        )
+      }
+
+      // Simulate race without player entry — create a modified save with no driver
+      const skippedSave = { ...freshSave, hiredDriver: undefined as any }
+      const result = simulateRace(skippedSave, race.track, race.round, race.laps, race.purse)
+
+      // Player gets no results
+      setRaceResult(result.driverResults)
+      setPlayerResult(null)
+
+      if (!race.isExhibition) {
+        const newStandings = updateStandings(standings, result)
+        freshSave.standings = newStandings
+
+        let ownerStandings = freshSave.ownerStandings ?? []
+        ownerStandings = updateOwnerStandings(ownerStandings, result, freshSave.carNumber || '1', freshSave.selectedTeam?.name ?? 'Player Team', freshSave.selectedTeam?.manufacturer ?? 'Chevrolet')
+        freshSave.ownerStandings = ownerStandings
+      } else {
+        freshSave.standings = standings
+      }
+
+      freshSave.seasonResults = [...(freshSave.seasonResults ?? []), result]
+      freshSave.currentWeek = (freshSave.seasonResults.length) + 1
+
+      // Advance date to day after race
+      const raceDate = new Date(race.date + 'T12:00:00')
+      raceDate.setDate(raceDate.getDate() + 1)
+      freshSave.currentDate = raceDate.toISOString().slice(0, 10)
+
+      // Apply talent progression for AI only
+      const tType = getTrackType(race.track)
+      applyTalentProgression(freshSave, result, tType)
+
+      // Check if season is over
+      const pRaces = (freshSave.activeSchedule ?? SCHEDULES[freshSave.selectedSeries?.id ?? 3] ?? SCHEDULES[3]).filter(r => !r.isExhibition)
+      if (freshSave.seasonResults.length >= pRaces.length) {
+        freshSave.seasonPhase = 'postseason'
+      }
+
+      saveSlot(freshSave)
+      refreshSave()
+      setPhase('results')
+    }, 1200)
   }
 
   if (seasonOver) {
@@ -390,6 +466,34 @@ const RaceDay: React.FC = () => {
           >
             {ready ? 'Simulate Race' : 'Requirements Not Met'}
           </button>
+
+          {!ready && isRaceDay && (
+            <button
+              className={styles.skipBtn}
+              onClick={() => setShowSkipWarning(true)}
+            >
+              Skip Race (No Entry)
+            </button>
+          )}
+
+          {/* Skip Race Warning Modal */}
+          {showSkipWarning && (
+            <div className={styles.skipOverlay} onClick={() => setShowSkipWarning(false)}>
+              <div className={styles.skipModal} onClick={e => e.stopPropagation()}>
+                <h3 className={styles.skipTitle}>⚠ Skip Race?</h3>
+                <p className={styles.skipText}>
+                  Your team will <strong>not enter</strong> this race. No drivers or cars will compete on your behalf.
+                </p>
+                <p className={styles.skipText}>
+                  You will earn <strong>no points</strong> and <strong>no prize money</strong> for this race. AI drivers will still compete and earn points.
+                </p>
+                <div className={styles.skipBtns}>
+                  <button className={styles.skipCancel} onClick={() => setShowSkipWarning(false)}>Go Back</button>
+                  <button className={styles.skipConfirm} onClick={handleSkipRace}>Skip Race</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

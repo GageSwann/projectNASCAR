@@ -4,11 +4,7 @@ import styles from './Overview.module.css'
 import { GameContext, OrgStats } from '../../types'
 import { SCHEDULES } from '../../data/schedule'
 import { getActiveSlotId, loadSlot, saveSlot } from '../../services/saveManager'
-
-const formatMoney = (n: number) => {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`
-  return `$${n.toLocaleString()}`
-}
+import { initializeStandings } from '../../data/raceSim'
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T12:00:00')
@@ -35,6 +31,30 @@ const Overview: React.FC = () => {
   const currentDate = saveData.currentDate || '2026-01-01'
 
   const schedule = saveData.activeSchedule ?? SCHEDULES[seriesId] ?? SCHEDULES[3]
+
+  // Initialize standings if empty (so they show all drivers at 0 points)
+  React.useEffect(() => {
+    if ((saveData.standings ?? []).length > 0) return
+    if (!saveData.hiredDriver) return
+    const slotId = getActiveSlotId()
+    if (!slotId) return
+    const data = loadSlot(slotId)
+    if (!data) return
+    if ((data.standings ?? []).length > 0) return
+
+    const driverName = `${data.hiredDriver!.firstName} ${data.hiredDriver!.lastName}`
+    data.standings = initializeStandings(
+      seriesId,
+      data.hiredDriver!.id,
+      driverName,
+      data.selectedTeam?.name ?? 'Player Team',
+      data.carNumber || '1',
+      data.selectedTeam?.manufacturer ?? 'Chevrolet',
+    )
+    data.lastPlayedAt = new Date().toISOString()
+    saveSlot(data)
+    refreshSave()
+  }, [saveData.standings, saveData.hiredDriver, seriesId, refreshSave])
 
   // Find next upcoming race (first race whose date >= currentDate and hasn't been raced)
   const nextRace = useMemo(() => {
@@ -167,15 +187,6 @@ const Overview: React.FC = () => {
           <h1 className={styles.heading}>{team.name}</h1>
           <span className={styles.sub}>{seriesName} &mdash; {formatDateLong(currentDate)}</span>
         </div>
-        <div className={styles.funds}>
-          <span className={styles.fundsLabel}>Available Funds</span>
-          <span className={styles.fundsValue}>{formatMoney(saveData.money)}</span>
-        </div>
-      </div>
-
-      {/* Current Date & Sim Controls */}
-      <div className={styles.dateBar}>
-        <span className={styles.dateLabel}>Season {saveData.currentSeason}</span>
         <div className={styles.simDropdown} ref={simRef}>
           <button className={styles.simBtn} onClick={() => setSimOpen(o => !o)}>
             Simulate ▼
