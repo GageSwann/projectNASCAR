@@ -182,10 +182,11 @@
 .phTeam { font-size: 0.8rem; color: var(--text-muted); }
 .phDnf { font-size: 0.75rem; color: #f44336; font-weight: 600; }
 .phPoints { font-size: 1.3rem; font-weight: 900; color: #4caf50; }
+.phPurse { font-size: 0.85rem; font-weight: 700; color: #ffd700; }
 
 /* Results table */
 .resultsTable { margin-bottom: 1rem; }
-.resultsHeader, .resultsRow { display: grid; grid-template-columns: 50px 1fr 1fr 100px 60px; gap: 0.25rem; align-items: center; padding: 0.4rem 0.6rem; }
+.resultsHeader, .resultsRow { display: grid; grid-template-columns: 50px 1fr 1fr 100px 60px 80px; gap: 0.25rem; align-items: center; padding: 0.4rem 0.6rem; }
 .resultsHeader { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border-color); }
 .resultsRow { font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
 .resultsRow:hover { background: rgba(255,255,255,0.03); }
@@ -193,6 +194,7 @@
 .dnfRow { opacity: 0.6; }
 .rCol1, .rCol5 { text-align: center; }
 .rCol3, .rCol4 { color: var(--text-muted); }
+.rCol6 { text-align: right; color: #ffd700; font-weight: 600; font-size: 0.75rem; }
 .posNum { font-weight: 700; }
 .podium { color: #ffd700; }
 
@@ -207,6 +209,6 @@
 @media (max-width: 768px) {
   .trackCard { flex-direction: column; text-align: center; }
   .trackVisual { flex: none; display: flex; justify-content: center; }
-  .resultsHeader, .resultsRow { grid-template-columns: 40px 1fr 80px 50px; }
+  .resultsHeader, .resultsRow { grid-template-columns: 40px 1fr 80px 50px 60px; }
   .rCol3 { display: none; }
 }

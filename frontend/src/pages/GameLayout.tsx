@@ -78,6 +78,20 @@ const GameLayout: React.FC = () => {
             <span className={styles.navLabel}>Store</span>
           </NavLink>
           <NavLink
+            to="/game/inventory"
+            className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}
+          >
+            <span className={styles.navIcon}>&#9776;</span>
+            <span className={styles.navLabel}>Inventory</span>
+          </NavLink>
+          <NavLink
+            to="/game/calendar"
+            className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}
+          >
+            <span className={styles.navIcon}>&#128197;</span>
+            <span className={styles.navLabel}>Calendar</span>
+          </NavLink>
+          <NavLink
             to="/game/rankings"
             className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}
           >
@@ -98,12 +112,24 @@ const GameLayout: React.FC = () => {
             <span className={styles.navIcon}>&#9874;</span>
             <span className={styles.navLabel}>Staff</span>
           </NavLink>
+          {(saveData.seasonPhase === 'postseason' || saveData.seasonPhase === 'offseason') && (
+            <NavLink
+              to="/game/offseason"
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}
+            >
+              <span className={styles.navIcon}>&#9879;</span>
+              <span className={styles.navLabel}>Offseason</span>
+            </NavLink>
+          )}
         </nav>
 
         <div className={styles.sidebarFooter}>
           <div className={styles.seasonInfo}>
             <span>Season {saveData.currentSeason}</span>
-            <span>Week {saveData.currentWeek}/{series?.num_races ?? 36}</span>
+            <span>{saveData.currentDate
+              ? new Date(saveData.currentDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : `Week ${saveData.currentWeek}/${series?.num_races ?? 36}`
+            }</span>
           </div>
           <button className={styles.menuBtn} onClick={() => navigate('/')}>
             Main Menu

@@ -37,13 +37,21 @@
 /* Hired banner */
 .hired {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 0.7rem 1rem;
   border: 2px solid #4caf50;
   border-radius: var(--radius-lg);
   margin-bottom: 1rem;
 }
+.hiredRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border-color, #333);
+}
+.hiredRow:last-child { border-bottom: none; }
 .hiredInfo { display: flex; flex-direction: column; gap: 0.1rem; }
 .hiredLabel { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
 .hiredName { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }

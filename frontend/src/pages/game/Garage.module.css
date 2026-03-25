@@ -17,88 +17,9 @@
   color: var(--text-primary);
 }
 
-.newBtn {
-  position: relative;
-  padding: 0.7rem 1.2rem;
-  background: transparent;
-  border: 2px solid var(--text-primary);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-weight: 700;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  overflow: hidden;
-  transition: color 0.3s ease;
-  z-index: 1;
-}
-
-.newBtn::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: var(--text-primary);
-  transition: left 0.3s ease;
-  z-index: -1;
-}
-
-.newBtn:hover {
-  color: var(--bg-primary);
-}
-
-.newBtn:hover::after {
-  left: 0;
-}
-
-/* New chassis form */
-.newForm {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.nameInput {
-  flex: 1;
-  min-width: 200px;
-  padding: 0.65rem 0.85rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
-
-.nameInput:focus {
-  outline: none;
-  border-color: var(--text-primary);
-}
-
-.confirmBtn,
-.cancelBtn {
-  padding: 0.65rem 1rem;
-  border-radius: var(--radius-md);
+.chassisCount {
+  font-size: 0.9rem;
   font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.confirmBtn {
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  border: none;
-}
-
-.cancelBtn {
-  background: transparent;
-  border: 1px solid var(--border-color);
   color: var(--text-muted);
 }
 
@@ -159,19 +80,32 @@
   border-radius: var(--radius-sm);
 }
 
-.progressBar {
-  margin-top: 0.6rem;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
-  overflow: hidden;
+.trackTypeTag {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.35rem;
 }
 
-.progressFill {
-  height: 100%;
-  background: #f0ad4e;
-  border-radius: 3px;
-  transition: width 0.3s ease;
+.cardMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.fullBadge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #4caf50;
+  border-radius: var(--radius-sm);
+  color: #4caf50;
 }
 
 .empty {
@@ -192,10 +126,24 @@
   min-height: 400px;
 }
 
+.detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
 .detailName {
   margin: 0 0 0.25rem;
   font-size: 1.5rem;
   color: var(--text-primary);
+}
+
+.detailMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .detailStatus {
@@ -205,41 +153,45 @@
   letter-spacing: 1px;
 }
 
-/* Build progress */
-.buildSection {
-  margin: 1.25rem 0;
-}
-
-.progressBarLg {
-  height: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 5px;
-  overflow: hidden;
-  margin-bottom: 0.5rem;
-}
-
-.progressText {
-  display: block;
-  font-size: 0.8rem;
+.detailTrackType {
+  font-size: 0.75rem;
   color: var(--text-muted);
-  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
 }
 
-.advanceBtn {
-  padding: 0.6rem 1rem;
+.deleteBtn {
+  padding: 0.4rem 0.8rem;
   background: transparent;
-  border: 2px solid #f0ad4e;
-  border-radius: var(--radius-md);
-  color: #f0ad4e;
+  border: 1px solid #f44336;
+  border-radius: var(--radius-sm);
+  color: #f44336;
+  font-size: 0.7rem;
   font-weight: 600;
-  font-size: 0.85rem;
+  text-transform: uppercase;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
 }
 
-.advanceBtn:hover {
-  background: #f0ad4e;
-  color: #000;
+.deleteBtn:hover {
+  background: #f44336;
+  color: #fff;
+}
+
+/* Missing parts warning */
+.missingWarning {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #ff9800;
+  border-radius: var(--radius-md);
+  background: rgba(255, 152, 0, 0.08);
+  color: #ff9800;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 /* Stats grid */
@@ -247,7 +199,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 0.75rem;
-  margin: 1.5rem 0;
+  margin: 1rem 0;
 }
 
 .statItem {
@@ -294,11 +246,16 @@
 
 .partRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
+}
+
+.partInfo {
+  flex: 1;
+  min-width: 0;
 }
 
 .partName {
@@ -313,6 +270,35 @@
   text-transform: capitalize;
 }
 
+.partHealth {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  width: 100px;
+}
+
+.healthBar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.healthFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.healthText {
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 2rem;
+  text-align: right;
+}
+
 .removeBtn,
 .installBtn {
   padding: 0.35rem 0.75rem;
@@ -321,6 +307,7 @@
   font-weight: 600;
   text-transform: uppercase;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .removeBtn {
@@ -343,6 +330,23 @@
 .installBtn:hover {
   background: #4caf50;
   color: #fff;
+}
+
+.installingRow {
+  border-color: #ff9800;
+  background: rgba(255, 152, 0, 0.04);
+}
+
+.installBadge {
+  margin-left: 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ff9800;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #ff9800;
+  border-radius: var(--radius-sm);
 }
 
 .selectPrompt {

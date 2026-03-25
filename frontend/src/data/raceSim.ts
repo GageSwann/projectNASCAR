@@ -13,6 +13,21 @@ const STAGE_POINTS: number[] = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 // Number of stages per series (Truck/Xfinity=2, Cup=3)
 const STAGES_PER_SERIES: Record<number, number> = { 1: 2, 2: 2, 3: 3 }
 
+// Race purse payout percentages by finishing position (1st through 25th+)
+// 1st gets 18%, 2nd gets 12%, etc. Remaining field splits ~1% each.
+const PURSE_PCT: number[] = [
+  0.18, 0.12, 0.085, 0.065, 0.055,
+  0.048, 0.042, 0.038, 0.035, 0.032,
+  0.028, 0.026, 0.024, 0.022, 0.020,
+  0.018, 0.016, 0.015, 0.014, 0.013,
+  0.012, 0.011, 0.010, 0.010, 0.010,
+]
+
+export function getPursePayout(purse: number, position: number): number {
+  const pct = position <= PURSE_PCT.length ? PURSE_PCT[position - 1] : 0.008
+  return Math.round(purse * pct)
+}
+
 function getPoints(position: number): number {
   return position <= POINTS_TABLE.length ? POINTS_TABLE[position - 1] : 1
 }
@@ -40,10 +55,13 @@ function computeCarRating(chassis: Chassis | undefined) {
   let reliability = chassis.base_reliability
   let aero = chassis.base_aero
   for (const p of chassis.installedParts) {
-    speed += p.item.speed_bonus
-    handling += p.item.handling_bonus
-    reliability += p.item.reliability_bonus
-    aero += p.item.aero_bonus
+    // Skip parts still being installed
+    if (p.installDaysLeft !== undefined && p.installDaysLeft > 0) continue
+    const hf = (p.health ?? 100) / 100
+    speed += Math.round(p.item.speed_bonus * hf)
+    handling += Math.round(p.item.handling_bonus * hf)
+    reliability += Math.round(p.item.reliability_bonus * hf)
+    aero += Math.round(p.item.aero_bonus * hf)
   }
   return { speed, handling, reliability, aero }
 }
@@ -76,7 +94,8 @@ function computePlayerStats(save: SaveSlotData, trackType: TrackType): EntrantSt
   const spotter = save.hiredSpotter
   const pitCrew = save.hiredPitCrew
 
-  const car = computeCarRating(save.chassis.find(c => c.status === 'ready'))
+  const car = computeCarRating(save.chassis.find(c => c.status === 'ready' && c.trackType === trackType)
+    ?? save.chassis.find(c => c.status === 'ready'))
 
   // Driver contribution: 40% of total
   const trackBonus = getDriverTrackBonus(driver, trackType)
@@ -207,6 +226,7 @@ export function simulateRace(
   trackName: string,
   round: number,
   totalLaps: number,
+  purse: number = 0,
 ): SeasonRaceResult {
   const seriesId = save.selectedSeries?.id ?? 3
   const trackType = getTrackType(trackName)
@@ -283,6 +303,7 @@ export function simulateRace(
       status,
       pointsEarned: 0,
       stagePoints: 0,
+      purseEarned: 0,
       isPlayer: e.isPlayer,
     })
 
@@ -300,6 +321,7 @@ export function simulateRace(
     result.finishPos = i + 1
     result.startPos = qualOrder.findIndex(e => e.driverId === sorted[i].driverId) + 1
     result.pointsEarned = result.status === 'running' ? getPoints(i + 1) : Math.max(1, getPoints(sorted.length))
+    result.purseEarned = getPursePayout(purse, i + 1)
     // Leader gets some laps led
     if (i === 0 && result.status === 'running') {
       result.lapsLed = Math.floor(totalLaps * (0.1 + r() * 0.3))
@@ -484,4 +506,39 @@ function applyDriverProgression(
   driver.short_track = Math.round(driver.short_track)
   driver.intermediate = Math.round(driver.intermediate)
   driver.road_course = Math.round(driver.road_course)
+}
+
+// ---- Part Wear System ----
+// Call after each race to degrade installed parts on the player's active chassis
+export function applyPartWear(
+  save: SaveSlotData,
+  playerResult: DriverRaceResult,
+  trackType: TrackType,
+): void {
+  // Find matching chassis
+  const chassis = save.chassis.find(c => c.status === 'ready' && c.trackType === trackType)
+    ?? save.chassis.find(c => c.status === 'ready')
+  if (!chassis) return
+
+  const isWreck = playerResult.status === 'dnf_wreck'
+  const isMechanical = playerResult.status === 'dnf_mechanical'
+
+  for (const part of chassis.installedParts) {
+    let wear = 0
+    if (isWreck) {
+      // Heavy damage: 15-30%
+      wear = 15 + Math.floor(Math.random() * 16)
+    } else if (isMechanical) {
+      // Mechanical failure: moderate damage to engine/transmission, light to others
+      if (part.item.category === 'engine' || part.item.category === 'transmission') {
+        wear = 10 + Math.floor(Math.random() * 11)
+      } else {
+        wear = 2 + Math.floor(Math.random() * 4)
+      }
+    } else {
+      // Normal racing wear: 2-5%
+      wear = 2 + Math.floor(Math.random() * 4)
+    }
+    part.health = Math.max(0, part.health - wear)
+  }
 }

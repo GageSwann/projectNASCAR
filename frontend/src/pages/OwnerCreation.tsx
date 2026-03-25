@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './OwnerCreation.module.css'
-import { SaveSlotData } from '../types'
+import { SaveSlotData, Manufacturer } from '../types'
 import { getFirstEmptySlotId, saveSlot, setActiveSlotId } from '../services/saveManager'
 
 const NATIONALITIES = [
@@ -53,6 +53,122 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ]
 
+// Popular US cities — at least a few per state
+const US_CITIES = [
+  // Alabama
+  'Birmingham, AL', 'Huntsville, AL', 'Mobile, AL',
+  // Alaska
+  'Anchorage, AK', 'Fairbanks, AK',
+  // Arizona
+  'Phoenix, AZ', 'Tucson, AZ', 'Scottsdale, AZ',
+  // Arkansas
+  'Little Rock, AR', 'Fayetteville, AR',
+  // California
+  'Los Angeles, CA', 'San Francisco, CA', 'San Diego, CA', 'Sacramento, CA', 'San Jose, CA',
+  // Colorado
+  'Denver, CO', 'Colorado Springs, CO', 'Boulder, CO',
+  // Connecticut
+  'Hartford, CT', 'New Haven, CT', 'Stamford, CT',
+  // Delaware
+  'Wilmington, DE', 'Dover, DE',
+  // Florida
+  'Miami, FL', 'Orlando, FL', 'Tampa, FL', 'Jacksonville, FL', 'Daytona Beach, FL',
+  // Georgia
+  'Atlanta, GA', 'Savannah, GA', 'Augusta, GA',
+  // Hawaii
+  'Honolulu, HI',
+  // Idaho
+  'Boise, ID', 'Idaho Falls, ID',
+  // Illinois
+  'Chicago, IL', 'Springfield, IL', 'Joliet, IL',
+  // Indiana
+  'Indianapolis, IN', 'Fort Wayne, IN', 'Bloomington, IN',
+  // Iowa
+  'Des Moines, IA', 'Cedar Rapids, IA', 'Newton, IA',
+  // Kansas
+  'Kansas City, KS', 'Wichita, KS', 'Topeka, KS',
+  // Kentucky
+  'Louisville, KY', 'Lexington, KY',
+  // Louisiana
+  'New Orleans, LA', 'Baton Rouge, LA', 'Shreveport, LA',
+  // Maine
+  'Portland, ME', 'Bangor, ME',
+  // Maryland
+  'Baltimore, MD', 'Annapolis, MD',
+  // Massachusetts
+  'Boston, MA', 'Worcester, MA', 'Cambridge, MA',
+  // Michigan
+  'Detroit, MI', 'Grand Rapids, MI', 'Ann Arbor, MI',
+  // Minnesota
+  'Minneapolis, MN', 'St. Paul, MN', 'Rochester, MN',
+  // Mississippi
+  'Jackson, MS', 'Biloxi, MS',
+  // Missouri
+  'St. Louis, MO', 'Kansas City, MO', 'Springfield, MO',
+  // Montana
+  'Billings, MT', 'Missoula, MT',
+  // Nebraska
+  'Omaha, NE', 'Lincoln, NE',
+  // Nevada
+  'Las Vegas, NV', 'Reno, NV',
+  // New Hampshire
+  'Manchester, NH', 'Concord, NH', 'Loudon, NH',
+  // New Jersey
+  'Newark, NJ', 'Jersey City, NJ', 'Trenton, NJ',
+  // New Mexico
+  'Albuquerque, NM', 'Santa Fe, NM',
+  // New York
+  'New York City, NY', 'Buffalo, NY', 'Rochester, NY', 'Syracuse, NY',
+  // North Carolina
+  'Charlotte, NC', 'Mooresville, NC', 'Concord, NC', 'Raleigh, NC', 'Greensboro, NC',
+  // North Dakota
+  'Fargo, ND', 'Bismarck, ND',
+  // Ohio
+  'Columbus, OH', 'Cleveland, OH', 'Cincinnati, OH',
+  // Oklahoma
+  'Oklahoma City, OK', 'Tulsa, OK',
+  // Oregon
+  'Portland, OR', 'Eugene, OR', 'Salem, OR',
+  // Pennsylvania
+  'Philadelphia, PA', 'Pittsburgh, PA', 'Harrisburg, PA',
+  // Rhode Island
+  'Providence, RI',
+  // South Carolina
+  'Charleston, SC', 'Columbia, SC', 'Greenville, SC',
+  // South Dakota
+  'Sioux Falls, SD', 'Rapid City, SD',
+  // Tennessee
+  'Nashville, TN', 'Memphis, TN', 'Knoxville, TN',
+  // Texas
+  'Houston, TX', 'Dallas, TX', 'Austin, TX', 'San Antonio, TX', 'Fort Worth, TX',
+  // Utah
+  'Salt Lake City, UT', 'Provo, UT',
+  // Vermont
+  'Burlington, VT', 'Montpelier, VT',
+  // Virginia
+  'Richmond, VA', 'Virginia Beach, VA', 'Norfolk, VA',
+  // Washington
+  'Seattle, WA', 'Tacoma, WA', 'Spokane, WA',
+  // West Virginia
+  'Charleston, WV', 'Morgantown, WV',
+  // Wisconsin
+  'Milwaukee, WI', 'Madison, WI', 'Green Bay, WI',
+  // Wyoming
+  'Cheyenne, WY', 'Casper, WY',
+]
+
+const MANUFACTURERS: Manufacturer[] = ['Ford', 'Toyota', 'Chevrolet']
+
+const STARTING_MONEY_OPTIONS = [
+  { value: 500000, label: '$500K — Shoestring Budget' },
+  { value: 1000000, label: '$1M — Starter' },
+  { value: 2500000, label: '$2.5M — Modest' },
+  { value: 5000000, label: '$5M — Competitive' },
+  { value: 10000000, label: '$10M — Well-Funded' },
+  { value: 25000000, label: '$25M — Big Time' },
+  { value: 50000000, label: '$50M — Unlimited' },
+]
+
 function getDaysInMonth(month: number, year: number): number {
   return new Date(year, month, 0).getDate()
 }
@@ -87,6 +203,14 @@ const OwnerCreation: React.FC = () => {
   const [natOpen, setNatOpen] = useState(false)
   const natRef = useRef<HTMLDivElement | null>(null)
 
+  // Team creation fields
+  const [teamName, setTeamName] = useState('')
+  const [teamCity, setTeamCity] = useState('')
+  const [cityOpen, setCityOpen] = useState(false)
+  const cityRef = useRef<HTMLDivElement | null>(null)
+  const [manufacturer, setManufacturer] = useState<Manufacturer | ''>('')
+  const [startingMoney, setStartingMoney] = useState(2500000)
+
   const age = birthMonth > 0 && birthDay > 0 && birthYear > 0
     ? calculateAge(birthMonth, birthDay, birthYear)
     : null
@@ -105,6 +229,9 @@ const OwnerCreation: React.FC = () => {
     const handleClickOutside = (e: MouseEvent) => {
       if (natRef.current && !natRef.current.contains(e.target as Node)) {
         setNatOpen(false)
+      }
+      if (cityRef.current && !cityRef.current.contains(e.target as Node)) {
+        setCityOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -133,7 +260,11 @@ const OwnerCreation: React.FC = () => {
     nationality.length > 0 &&
     age !== null &&
     age >= 18 &&
-    age <= 120
+    age <= 120 &&
+    teamName.trim().length > 0 &&
+    teamCity.length > 0 &&
+    manufacturer !== '' &&
+    startingMoney > 0
 
   const handleContinue = () => {
     if (!isFormValid) return
@@ -156,16 +287,49 @@ const OwnerCreation: React.FC = () => {
         birthDay,
         birthYear,
       },
-      money: 500000,
+      selectedTeam: {
+        id: 1,
+        series_id: 0,
+        name: teamName.trim(),
+        founded_year: 2026,
+        base_city: teamCity,
+        budget: startingMoney,
+        reputation: 50,
+        garage_rating: 50,
+        headquarters: teamCity,
+        manufacturer: manufacturer as Manufacturer,
+      },
+      money: startingMoney,
       chassis: [],
       inventory: [],
       currentWeek: 1,
+      currentDate: '2026-01-01',
       currentSeason: 2026,
       totalChampionships: 0,
       totalWins: 0,
+      carNumber: '1',
+      maxAge: 65,
       hiredPitCrew: [],
+      hiredDrivers: [],
+      hiredCrewChiefs: [],
+      hiredSpotters: [],
+      hiredPitCrews: [],
       seasonResults: [],
       standings: [],
+      ownerStandings: [],
+      seasonPhase: 'preseason',
+      driverChampionshipEarnings: 0,
+      ownerChampionshipEarnings: 0,
+      carEntries: [],
+      orgStats: {
+        championshipWins: 0,
+        raceWins: 0,
+        top5s: 0,
+        top10s: 0,
+        poles: 0,
+        races: 0,
+        dnfs: 0,
+      },
     }
 
     saveSlot(saveData)
@@ -191,7 +355,7 @@ const OwnerCreation: React.FC = () => {
         </button>
         <div className={styles.headerText}>
           <h1 className={styles.title}>New Career</h1>
-          <p className={styles.subtitle}>Create your owner identity before selecting a team.</p>
+          <p className={styles.subtitle}>Create your owner identity and team.</p>
         </div>
       </div>
 
@@ -309,6 +473,88 @@ const OwnerCreation: React.FC = () => {
             Age: <strong>{age}</strong>
           </div>
         )}
+      </div>
+
+      <div className={styles.formCard}>
+        <h2 className={styles.sectionTitle}>Team Information</h2>
+
+        <div className={styles.fieldRow}>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="teamName">Team Name</label>
+            <input
+              id="teamName"
+              className={styles.input}
+              type="text"
+              placeholder="Enter team name"
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              maxLength={40}
+            />
+          </div>
+        </div>
+
+        <div className={styles.fieldRow}>
+          <div className={styles.field}>
+            <label className={styles.label}>City</label>
+            <div className={styles.dropdown} ref={cityRef}>
+              <button
+                type="button"
+                className={`${styles.dropdownTrigger} ${cityOpen ? styles.dropdownOpen : ''}`}
+                onClick={() => setCityOpen((o) => !o)}
+              >
+                {teamCity || 'Select city'}
+              </button>
+              {cityOpen && (
+                <ul className={styles.dropdownList}>
+                  {US_CITIES.map((c) => (
+                    <li
+                      key={c}
+                      className={`${styles.dropdownItem} ${teamCity === c ? styles.dropdownItemActive : ''}`}
+                      onClick={() => { setTeamCity(c); setCityOpen(false) }}
+                    >
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.fieldRow}>
+          <div className={styles.field}>
+            <label className={styles.label}>Manufacturer</label>
+            <div className={styles.manufacturerGroup}>
+              {MANUFACTURERS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`${styles.manufacturerBtn} ${manufacturer === m ? styles.manufacturerBtnActive : ''}`}
+                  onClick={() => setManufacturer(m)}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.formCard}>
+        <h2 className={styles.sectionTitle}>Starting Budget</h2>
+
+        <div className={styles.moneyGrid}>
+          {STARTING_MONEY_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`${styles.moneyBtn} ${startingMoney === opt.value ? styles.moneyBtnActive : ''}`}
+              onClick={() => setStartingMoney(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={styles.actions}>

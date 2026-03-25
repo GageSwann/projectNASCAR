@@ -26,13 +26,15 @@ function attrColor(val: number): string {
   return '#f44336'
 }
 
+const MAX_DRIVERS = 4
+
 const Drivers: React.FC = () => {
   const { saveData, refreshSave } = useOutletContext<GameContext>()
   const seriesId = saveData.selectedSeries?.id ?? 3
 
   const market = useMemo(() => generateDriverMarket(seriesId), [seriesId])
   const [selected, setSelected] = useState<MarketDriver | null>(null)
-  const [hired, setHired] = useState<MarketDriver | undefined>(saveData.hiredDriver)
+  const [hiredDrivers, setHiredDrivers] = useState<MarketDriver[]>(saveData.hiredDrivers ?? (saveData.hiredDriver ? [saveData.hiredDriver] : []))
   const [money, setMoney] = useState(saveData.money)
   const [filter, setFilter] = useState<'all' | 'affordable'>('all')
 
@@ -41,28 +43,37 @@ const Drivers: React.FC = () => {
     : market
 
   const handleHire = (driver: MarketDriver) => {
+    if (hiredDrivers.length >= MAX_DRIVERS) return
     const slotId = getActiveSlotId()
     if (!slotId) return
     const data = loadSlot(slotId)
     if (!data) return
 
-    data.hiredDriver = driver
-    data.money = data.money // salary deducted per-season, not upfront
+    const drivers = data.hiredDrivers ?? []
+    // Don't hire duplicates
+    if (drivers.some(d => d.id === driver.id)) return
+    drivers.push(driver)
+    data.hiredDrivers = drivers
+    // Keep legacy field in sync with first driver
+    data.hiredDriver = drivers[0]
     saveSlot(data)
-    setHired(driver)
+    setHiredDrivers([...drivers])
     setSelected(driver)
     refreshSave()
   }
 
-  const handleRelease = () => {
+  const handleRelease = (driverId: number) => {
     const slotId = getActiveSlotId()
     if (!slotId) return
     const data = loadSlot(slotId)
     if (!data) return
 
-    data.hiredDriver = undefined
+    const drivers = (data.hiredDrivers ?? []).filter(d => d.id !== driverId)
+    data.hiredDrivers = drivers
+    data.hiredDriver = drivers[0] ?? undefined
     saveSlot(data)
-    setHired(undefined)
+    setHiredDrivers([...drivers])
+    if (selected?.id === driverId) setSelected(null)
     refreshSave()
   }
 
@@ -74,7 +85,7 @@ const Drivers: React.FC = () => {
       if (data) setMoney(data.money)
     }
   }
-  React.useEffect(() => { syncMoney() }, [hired])
+  React.useEffect(() => { syncMoney() }, [hiredDrivers])
 
   return (
     <div className={styles.page}>
@@ -83,14 +94,18 @@ const Drivers: React.FC = () => {
         <span className={styles.balance}>Balance: {formatMoney(money)}</span>
       </div>
 
-      {hired && (
+      {hiredDrivers.length > 0 && (
         <div className={styles.currentDriver}>
           <div className={styles.currentInfo}>
-            <span className={styles.currentLabel}>Current Driver</span>
-            <span className={styles.currentName}>{hired.firstName} {hired.lastName}</span>
-            <span className={styles.currentSalary}>{formatMoney(hired.salary)}/season</span>
+            <span className={styles.currentLabel}>Signed Drivers ({hiredDrivers.length}/{MAX_DRIVERS})</span>
+            {hiredDrivers.map(d => (
+              <div key={d.id} className={styles.hiredDriverRow}>
+                <span className={styles.currentName}>{d.firstName} {d.lastName}</span>
+                <span className={styles.currentSalary}>{formatMoney(d.salary)}/season</span>
+                <button className={styles.releaseBtn} onClick={() => handleRelease(d.id)}>Release</button>
+              </div>
+            ))}
           </div>
-          <button className={styles.releaseBtn} onClick={handleRelease}>Release Driver</button>
         </div>
       )}
 
@@ -105,22 +120,25 @@ const Drivers: React.FC = () => {
 
       <div className={styles.content}>
         <div className={styles.listCol}>
-          {filtered.map(d => (
-            <button
-              key={d.id}
-              className={`${styles.driverCard} ${selected?.id === d.id ? styles.selectedCard : ''} ${hired?.id === d.id ? styles.hiredCard : ''}`}
-              onClick={() => setSelected(d)}
-            >
-              <div className={styles.cardMain}>
-                <span className={styles.driverName}>{d.firstName} {d.lastName}</span>
-                <span className={styles.driverMeta}>Age {d.age} &middot; {d.experience} yr exp</span>
-              </div>
-              <div className={styles.cardRight}>
-                <span className={styles.salary}>{formatMoney(d.salary)}/season</span>
-                <span className={styles.overallBadge}>{Math.round((d.pace + d.racecraft + d.consistency) / 3)}</span>
-              </div>
-            </button>
-          ))}
+          {filtered.map(d => {
+            const isHired = hiredDrivers.some(h => h.id === d.id)
+            return (
+              <button
+                key={d.id}
+                className={`${styles.driverCard} ${selected?.id === d.id ? styles.selectedCard : ''} ${isHired ? styles.hiredCard : ''}`}
+                onClick={() => setSelected(d)}
+              >
+                <div className={styles.cardMain}>
+                  <span className={styles.driverName}>{d.firstName} {d.lastName}</span>
+                  <span className={styles.driverMeta}>Age {d.age} &middot; {d.experience} yr exp</span>
+                </div>
+                <div className={styles.cardRight}>
+                  <span className={styles.salary}>{formatMoney(d.salary)}/season</span>
+                  <span className={styles.overallBadge}>{Math.round((d.pace + d.racecraft + d.consistency) / 3)}</span>
+                </div>
+              </button>
+            )
+          })}
         </div>
 
         <div className={styles.detailCol}>
@@ -164,12 +182,15 @@ const Drivers: React.FC = () => {
                 ))}
               </div>
 
-              {hired?.id !== selected.id && (
+              {!hiredDrivers.some(d => d.id === selected.id) && hiredDrivers.length < MAX_DRIVERS && (
                 <button className={styles.hireBtn} onClick={() => handleHire(selected)}>
                   Sign {selected.firstName} {selected.lastName}
                 </button>
               )}
-              {hired?.id === selected.id && (
+              {!hiredDrivers.some(d => d.id === selected.id) && hiredDrivers.length >= MAX_DRIVERS && (
+                <div className={styles.signedBadge} style={{ color: '#ff9800' }}>Roster Full (4/4)</div>
+              )}
+              {hiredDrivers.some(d => d.id === selected.id) && (
                 <div className={styles.signedBadge}>&#10003; Currently Signed</div>
               )}
             </>

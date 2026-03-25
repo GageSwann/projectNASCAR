@@ -9,6 +9,8 @@ export interface Series {
   description: string;
 }
 
+export type Manufacturer = 'Ford' | 'Toyota' | 'Chevrolet' | 'Ram';
+
 export interface Team {
   id: number;
   series_id: number;
@@ -19,6 +21,7 @@ export interface Team {
   reputation: number;
   garage_rating: number;
   headquarters: string;
+  manufacturer?: Manufacturer;
 }
 
 export interface Driver {
@@ -163,17 +166,39 @@ export interface SaveSlotData {
   chassis: Chassis[];
   inventory: InventoryItem[];
   currentWeek: number;
+  currentDate: string; // ISO date string "YYYY-MM-DD" — the current in-game day
   currentSeason: number;
   totalChampionships: number;
   totalWins: number;
-  // Staff & Driver
+  carNumber: string; // player's car number for owner standings
+  maxAge: number; // career ends when owner hits this age (default 65)
+  // Multi-car entries (up to 4)
+  carEntries: CarEntry[];
+  // Multiple staff hires (up to 4 of each)
+  hiredDrivers: MarketDriver[];
+  hiredCrewChiefs: MarketCrewChief[];
+  hiredSpotters: MarketSpotter[];
+  hiredPitCrews: MarketPitCrewMember[][]; // array of pit crews, each is 6 members
+  // Legacy single-car fields (kept for migration)
   hiredDriver?: MarketDriver;
   hiredCrewChief?: MarketCrewChief;
   hiredSpotter?: MarketSpotter;
   hiredPitCrew: MarketPitCrewMember[];
+  // Organization lifetime stats
+  orgStats: OrgStats;
   // Season tracking
   seasonResults: SeasonRaceResult[];
   standings: StandingsEntry[];
+  ownerStandings: OwnerStandingsEntry[];
+  // Custom schedule for next season (built during offseason)
+  customSchedule?: RaceScheduleEntry[];
+  // Active schedule (set at season start — either default or custom)
+  activeSchedule?: RaceScheduleEntry[];
+  // Season state
+  seasonPhase: 'offseason' | 'preseason' | 'regular' | 'postseason';
+  // Championship purse earnings
+  driverChampionshipEarnings: number;
+  ownerChampionshipEarnings: number;
 }
 
 export interface LocalCareerFile {
@@ -187,12 +212,13 @@ export interface LocalCareerFile {
 }
 
 export type ChassisStatus = 'building' | 'ready' | 'damaged' | 'totaled';
-export type ItemCategory = 'engine' | 'suspension' | 'tires' | 'aerodynamics' | 'brakes' | 'transmission' | 'safety' | 'electronics';
+export type ItemCategory = 'engine' | 'suspension' | 'aerodynamics' | 'brakes' | 'transmission';
 
 export interface Chassis {
   id: string;
   name: string;
   series_id: number;
+  trackType: TrackType; // which track type this chassis is built for
   status: ChassisStatus;
   base_speed: number;
   base_handling: number;
@@ -222,7 +248,10 @@ export interface InventoryItem {
   id: string;
   item: StoreItem;
   chassisId?: string;
+  health: number; // 0-100, degrades with use
   purchased_at: string;
+  installStartDate?: string; // ISO date when install began
+  installDaysLeft?: number; // days remaining until install complete (0 = ready)
 }
 
 export interface PowerRankingEntry {
@@ -296,7 +325,7 @@ export interface MarketSpotter {
 }
 
 // ---- Pit Crew ----
-export type PitCrewRole = 'tire_changer_front' | 'tire_changer_rear' | 'tire_carrier_front' | 'tire_carrier_rear' | 'jackman';
+export type PitCrewRole = 'tire_changer_front' | 'tire_changer_rear' | 'tire_carrier_front' | 'tire_carrier_rear' | 'jackman' | 'gas_man';
 
 export interface MarketPitCrewMember {
   id: number;
@@ -315,6 +344,7 @@ export const PIT_CREW_ROLE_LABELS: Record<PitCrewRole, string> = {
   tire_carrier_front: 'Front Tire Carrier',
   tire_carrier_rear: 'Rear Tire Carrier',
   jackman: 'Jackman',
+  gas_man: 'Gas Man',
 };
 
 // ---- Race Results ----
@@ -334,6 +364,7 @@ export interface DriverRaceResult {
   status: 'running' | 'dnf_wreck' | 'dnf_mechanical' | 'dnf_pit_error';
   pointsEarned: number;
   stagePoints: number;
+  purseEarned: number;
   isPlayer: boolean;
 }
 
@@ -348,6 +379,95 @@ export interface StandingsEntry {
   dnfs: number;
   isPlayer: boolean;
   stagePoints?: number;
+}
+
+// ---- Owner Standings (tracks car number, not specific driver) ----
+export interface OwnerStandingsEntry {
+  carNumber: string;
+  teamName: string;
+  points: number;
+  wins: number;
+  top5: number;
+  top10: number;
+  dnfs: number;
+  isPlayer: boolean;
+}
+
+// ---- Custom schedule entry (for season builder) ----
+export interface RaceScheduleEntry {
+  round: number;
+  name: string;
+  track: string;
+  date: string;
+  laps: number;
+  purse: number;
+  isExhibition?: boolean; // exhibition races don't award championship points
+}
+
+// ---- Championship Purse Payouts ----
+// Real-life approximate payouts by final championship position
+export const DRIVER_CHAMPIONSHIP_PURSE: Record<number, Record<number, number>> = {
+  // Truck Series
+  1: {
+    1: 500000, 2: 300000, 3: 225000, 4: 175000, 5: 150000,
+    6: 125000, 7: 110000, 8: 100000, 9: 90000, 10: 80000,
+  },
+  // Xfinity Series
+  2: {
+    1: 1200000, 2: 750000, 3: 550000, 4: 400000, 5: 350000,
+    6: 300000, 7: 275000, 8: 250000, 9: 225000, 10: 200000,
+  },
+  // Cup Series
+  3: {
+    1: 5000000, 2: 3000000, 3: 2250000, 4: 1750000, 5: 1500000,
+    6: 1250000, 7: 1100000, 8: 1000000, 9: 900000, 10: 800000,
+    11: 700000, 12: 650000, 13: 600000, 14: 575000, 15: 550000,
+    16: 525000, 17: 500000, 18: 475000, 19: 450000, 20: 425000,
+  },
+}
+
+export const OWNER_CHAMPIONSHIP_PURSE: Record<number, Record<number, number>> = {
+  1: {
+    1: 350000, 2: 200000, 3: 150000, 4: 120000, 5: 100000,
+    6: 85000, 7: 75000, 8: 65000, 9: 55000, 10: 50000,
+  },
+  2: {
+    1: 800000, 2: 500000, 3: 375000, 4: 275000, 5: 225000,
+    6: 200000, 7: 175000, 8: 150000, 9: 135000, 10: 125000,
+  },
+  3: {
+    1: 3000000, 2: 2000000, 3: 1500000, 4: 1200000, 5: 1000000,
+    6: 850000, 7: 750000, 8: 650000, 9: 600000, 10: 550000,
+    11: 500000, 12: 475000, 13: 450000, 14: 425000, 15: 400000,
+    16: 375000, 17: 350000, 18: 325000, 19: 300000, 20: 275000,
+  },
+}
+
+// Install time in days per part tier
+export const INSTALL_DAYS_BY_TIER: Record<number, number> = {
+  1: 1, 2: 2, 3: 3, 4: 4,
+}
+
+// ---- Car Entry (one per car fielded, up to 4) ----
+export interface CarEntry {
+  carNumber: string;
+  chassisId?: string; // references a Chassis in saveData.chassis
+  driverId?: number;  // references which hired driver by their id
+  driver?: MarketDriver;
+  crewChief?: MarketCrewChief;
+  spotter?: MarketSpotter;
+  pitCrew: MarketPitCrewMember[];
+}
+
+// ---- Organization Lifetime Stats ----
+export interface OrgStats {
+  championshipWins: number;
+  raceWins: number;
+  top5s: number;
+  top10s: number;
+  poles: number;
+  races: number;
+  dnfs: number;
 }
 
 // ---- Game context passed via Outlet ----

@@ -154,6 +154,14 @@
   animation-delay: calc(var(--page-enter-step) * 2);
 }
 
+.formCard:nth-of-type(3) {
+  animation-delay: calc(var(--page-enter-step) * 3);
+}
+
+.formCard:nth-of-type(4) {
+  animation-delay: calc(var(--page-enter-step) * 4);
+}
+
 .formCard:hover {
   background: var(--bg-tertiary);
 }
@@ -350,7 +358,7 @@
   justify-content: center;
   position: relative;
   z-index: 10;
-  animation: fadeUp var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 3) both;
+  animation: fadeUp var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 5) both;
 }
 
 .continueBtn {
@@ -432,6 +440,122 @@
   color: #000000;
 }
 
+/* Manufacturer selection */
+.manufacturerGroup {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.manufacturerBtn {
+  padding: 0.65rem 1.4rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.manufacturerBtn:hover {
+  background: var(--bg-tertiary);
+}
+
+.manufacturerBtnActive {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.manufacturerBtnActive:hover {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+:global([data-theme="light"]) .manufacturerBtn {
+  background: #ffffff;
+  border-color: #000000;
+  color: #000000;
+}
+
+:global([data-theme="light"]) .manufacturerBtnActive {
+  background: #000000;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .manufacturerBtn {
+  background: #0a0a0a;
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .manufacturerBtnActive {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* Starting money grid */
+.moneyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.65rem;
+}
+
+.moneyBtn {
+  padding: 0.7rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  text-align: center;
+}
+
+.moneyBtn:hover {
+  background: var(--bg-tertiary);
+}
+
+.moneyBtnActive {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.moneyBtnActive:hover {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+:global([data-theme="light"]) .moneyBtn {
+  background: #ffffff;
+  border-color: #000000;
+  color: #000000;
+}
+
+:global([data-theme="light"]) .moneyBtnActive {
+  background: #000000;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .moneyBtn {
+  background: #0a0a0a;
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .moneyBtnActive {
+  background: #ffffff;
+  color: #000000;
+}
+
 /* Footer */
 .footer {
   max-width: 800px;
@@ -439,7 +563,7 @@
   text-align: center;
   position: relative;
   z-index: 10;
-  animation: fadeUp var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 4) both;
+  animation: fadeUp var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 6) both;
 }
 
 .version {

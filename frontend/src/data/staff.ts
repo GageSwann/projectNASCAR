@@ -97,7 +97,7 @@ export function generateSpotters(seriesId: number): MarketSpotter[] {
 }
 
 // ---- Pit Crew ----
-const ROLES: PitCrewRole[] = ['tire_changer_front', 'tire_changer_rear', 'tire_carrier_front', 'tire_carrier_rear', 'jackman']
+const ROLES: PitCrewRole[] = ['tire_changer_front', 'tire_changer_rear', 'tire_carrier_front', 'tire_carrier_rear', 'jackman', 'gas_man']
 
 const PIT_FIRST_NAMES = [
   'Marco', 'Ty', 'Dex', 'Bo', 'Lenny', 'Ray', 'Mick', 'Hector', 'Gil', 'Wes',

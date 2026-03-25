@@ -128,8 +128,21 @@ const LoadCareer: React.FC = () => {
         totalChampionships: parsed.totalChampionships ?? 0,
         totalWins: parsed.totalWins ?? 0,
         hiredPitCrew: [],
+        hiredDrivers: [],
+        hiredCrewChiefs: [],
+        hiredSpotters: [],
+        hiredPitCrews: [],
+        carEntries: [],
+        orgStats: { championshipWins: 0, raceWins: 0, top5s: 0, top10s: 0, poles: 0, races: 0, dnfs: 0 },
         seasonResults: [],
         standings: [],
+        currentDate: `${parsed.currentSeason ?? 2026}-01-01`,
+        carNumber: '1',
+        maxAge: 65,
+        ownerStandings: [],
+        seasonPhase: 'regular' as const,
+        driverChampionshipEarnings: 0,
+        ownerChampionshipEarnings: 0,
       }
 
       saveSlot(importedSave)

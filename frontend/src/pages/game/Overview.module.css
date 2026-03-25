@@ -45,6 +45,92 @@
   color: #4caf50;
 }
 
+/* ---- Date bar ---- */
+.dateBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dateLabel {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+.simDropdown {
+  position: relative;
+}
+
+.simBtn {
+  padding: 0.4rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.simBtn:hover {
+  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.simMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 220px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.simOption {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.simOption:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.simOption + .simOption {
+  border-top: 1px solid var(--border-color);
+}
+
+.nrExhibition {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ff9800;
+  margin-bottom: 0.25rem;
+}
+
 /* ---- Next Race hero ---- */
 .nextRace {
   position: relative;
@@ -363,6 +449,74 @@
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+/* ---- Part Installation Notification ---- */
+.notifOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.notifModal {
+  background: var(--bg-secondary);
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.notifTitle {
+  margin: 0 0 1rem;
+  color: #4caf50;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.notifList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.notifList li {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.notifBtn {
+  padding: 0.5rem 2rem;
+  background: transparent;
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.notifBtn:hover {
+  background: var(--text-primary);
+  color: var(--bg-primary);
 }
 
 /* ---- Responsive ---- */

@@ -15,6 +15,9 @@ import Rankings from './pages/game/Rankings'
 import Drivers from './pages/game/Drivers'
 import Staff from './pages/game/Staff'
 import RaceDay from './pages/game/RaceDay'
+import Inventory from './pages/game/Inventory'
+import Calendar from './pages/game/Calendar'
+import OffSeason from './pages/game/OffSeason'
 
 function App() {
   return (
@@ -46,10 +49,13 @@ function App() {
                 <Route index element={<Overview />} />
                 <Route path="garage" element={<Garage />} />
                 <Route path="store" element={<Store />} />
+                <Route path="inventory" element={<Inventory />} />
+                <Route path="calendar" element={<Calendar />} />
                 <Route path="rankings" element={<Rankings />} />
                 <Route path="drivers" element={<Drivers />} />
                 <Route path="staff" element={<Staff />} />
                 <Route path="race" element={<RaceDay />} />
+                <Route path="offseason" element={<OffSeason />} />
               </Route>
               <Route path="/settings" element={<Settings />} />
             </Routes>

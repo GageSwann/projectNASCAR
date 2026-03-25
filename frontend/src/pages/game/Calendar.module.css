@@ -1,0 +1,513 @@
+.page {
+  max-width: 1200px;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.heading {
+  font-size: clamp(1.8rem, 5vw, 2.4rem);
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.dateDisplay {
+  display: flex;
+  align-items: center;
+}
+
+.currentDateLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffd700;
+}
+
+/* Advance time bar */
+.advanceBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.simDropdown {
+  position: relative;
+}
+
+.simBtn {
+  padding: 0.45rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.simBtn:hover {
+  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.simMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 200px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.simOption {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.simOption:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.simOption + .simOption {
+  border-top: 1px solid var(--border-color);
+}
+
+.raceTodayBadge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffd700;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #ffd700;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 215, 0, 0.08);
+}
+
+.todayBtn {
+  margin-left: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.todayBtn:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Layout */
+.calendarLayout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+}
+
+/* Calendar column */
+.calendarCol {
+  min-width: 0;
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.navBtn {
+  padding: 0.4rem 0.8rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.navBtn:hover:not(:disabled) {
+  border-color: var(--text-primary);
+}
+
+.navBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.monthLabel {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Calendar grid */
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.dayHeader {
+  padding: 0.5rem 0;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.dayCell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.01);
+  position: relative;
+  cursor: default;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.emptyCell {
+  border-color: transparent;
+  background: transparent;
+}
+
+.raceCell {
+  cursor: pointer;
+  border-width: 2px;
+}
+
+.raceCell:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--text-primary);
+}
+
+.completedCell {
+  opacity: 0.45;
+}
+
+.currentCell {
+  border-color: #ffd700 !important;
+  background: rgba(255, 215, 0, 0.06);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.15);
+}
+
+.selectedCell {
+  border-color: var(--text-primary) !important;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dayNum {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.raceDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Detail column */
+.detailCol {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.raceDetail {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.raceDetailHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.roundBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--text-muted);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.trackTypeBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+}
+
+.raceName {
+  font-size: 1.3rem;
+  margin: 0.25rem 0;
+  color: var(--text-primary);
+}
+
+.trackName {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.raceStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.raceStat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.raceStat span {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.raceStat strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.raceStatus {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.simToRaceBtn {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.simToRaceBtn:hover {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.clickableCell {
+  cursor: pointer;
+}
+
+.clickableCell:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.noSelection {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem 1rem;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+/* Schedule list */
+.subHead {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.scheduleList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scheduleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.scheduleRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-color-hover);
+}
+
+.scheduleCompleted {
+  opacity: 0.4;
+}
+
+.scheduleCurrent {
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.scheduleSelected {
+  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.schedRound {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.schedDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.schedInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.schedName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedTrack {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedDate {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.schedSimBtn {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.schedSimBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 900px) {
+  .calendarLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .detailCol {
+    max-height: none;
+  }
+}

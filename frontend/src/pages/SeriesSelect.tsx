@@ -73,7 +73,7 @@ const SeriesSelect: React.FC = () => {
     slot.lastPlayedAt = new Date().toISOString()
     saveSlot(slot)
 
-    navigate('/careers')
+    navigate('/game')
   }
 
   return (
@@ -112,7 +112,7 @@ const SeriesSelect: React.FC = () => {
           disabled={selected === null}
           onClick={handleContinue}
         >
-          Continue to Team Selection →
+          Start Career →
         </button>
       </div>
 

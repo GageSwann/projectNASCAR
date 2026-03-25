@@ -32,7 +32,9 @@ function AttrBar({ label, value }: { label: string; value: number }) {
   )
 }
 
-const PIT_ROLES_NEEDED: PitCrewRole[] = ['tire_changer_front', 'tire_changer_rear', 'tire_carrier_front', 'tire_carrier_rear', 'jackman']
+const PIT_ROLES_NEEDED: PitCrewRole[] = ['tire_changer_front', 'tire_changer_rear', 'tire_carrier_front', 'tire_carrier_rear', 'jackman', 'gas_man']
+
+const MAX_STAFF = 4
 
 const Staff: React.FC = () => {
   const { saveData, refreshSave } = useOutletContext<GameContext>()
@@ -43,8 +45,8 @@ const Staff: React.FC = () => {
   const pitPool = useMemo(() => generatePitCrew(seriesId), [seriesId])
 
   const [tab, setTab] = useState<Tab>('crew_chief')
-  const [hiredCC, setHiredCC] = useState<MarketCrewChief | undefined>(saveData.hiredCrewChief)
-  const [hiredSpotter, setHiredSpotter] = useState<MarketSpotter | undefined>(saveData.hiredSpotter)
+  const [hiredCCs, setHiredCCs] = useState<MarketCrewChief[]>(saveData.hiredCrewChiefs ?? (saveData.hiredCrewChief ? [saveData.hiredCrewChief] : []))
+  const [hiredSpotters, setHiredSpotters] = useState<MarketSpotter[]>(saveData.hiredSpotters ?? (saveData.hiredSpotter ? [saveData.hiredSpotter] : []))
   const [hiredPit, setHiredPit] = useState<MarketPitCrewMember[]>(saveData.hiredPitCrew ?? [])
   const [money, setMoney] = useState(saveData.money)
   const [selectedCC, setSelectedCC] = useState<MarketCrewChief | null>(null)
@@ -61,49 +63,63 @@ const Staff: React.FC = () => {
 
   // ---- Crew Chief ----
   const handleHireCC = (cc: MarketCrewChief) => {
+    if (hiredCCs.length >= MAX_STAFF) return
+    if (hiredCCs.some(c => c.id === cc.id)) return
     const slotId = getActiveSlotId()
     if (!slotId) return
     const data = loadSlot(slotId)
     if (!data) return
-    data.hiredCrewChief = cc
+    const ccs = data.hiredCrewChiefs ?? []
+    ccs.push(cc)
+    data.hiredCrewChiefs = ccs
+    data.hiredCrewChief = ccs[0]
     saveSlot(data)
-    setHiredCC(cc)
+    setHiredCCs([...ccs])
     persistSave()
     refreshSave()
   }
 
-  const handleReleaseCC = () => {
+  const handleReleaseCC = (ccId: number) => {
     const slotId = getActiveSlotId()
     if (!slotId) return
     const data = loadSlot(slotId)
     if (!data) return
-    data.hiredCrewChief = undefined
+    const ccs = (data.hiredCrewChiefs ?? []).filter(c => c.id !== ccId)
+    data.hiredCrewChiefs = ccs
+    data.hiredCrewChief = ccs[0] ?? undefined
     saveSlot(data)
-    setHiredCC(undefined)
+    setHiredCCs([...ccs])
     refreshSave()
   }
 
   // ---- Spotter ----
   const handleHireSpotter = (sp: MarketSpotter) => {
+    if (hiredSpotters.length >= MAX_STAFF) return
+    if (hiredSpotters.some(s => s.id === sp.id)) return
     const slotId = getActiveSlotId()
     if (!slotId) return
     const data = loadSlot(slotId)
     if (!data) return
-    data.hiredSpotter = sp
+    const sps = data.hiredSpotters ?? []
+    sps.push(sp)
+    data.hiredSpotters = sps
+    data.hiredSpotter = sps[0]
     saveSlot(data)
-    setHiredSpotter(sp)
+    setHiredSpotters([...sps])
     persistSave()
     refreshSave()
   }
 
-  const handleReleaseSpotter = () => {
+  const handleReleaseSpotter = (spId: number) => {
     const slotId = getActiveSlotId()
     if (!slotId) return
     const data = loadSlot(slotId)
     if (!data) return
-    data.hiredSpotter = undefined
+    const sps = (data.hiredSpotters ?? []).filter(s => s.id !== spId)
+    data.hiredSpotters = sps
+    data.hiredSpotter = sps[0] ?? undefined
     saveSlot(data)
-    setHiredSpotter(undefined)
+    setHiredSpotters([...sps])
     refreshSave()
   }
 
@@ -118,7 +134,7 @@ const Staff: React.FC = () => {
     const existing = data.hiredPitCrew.findIndex(m => m.role === member.role)
     if (existing >= 0) {
       data.hiredPitCrew[existing] = member
-    } else if (data.hiredPitCrew.length < 5) {
+    } else if (data.hiredPitCrew.length < 6) {
       data.hiredPitCrew.push(member)
     } else {
       return // crew is full
@@ -152,51 +168,61 @@ const Staff: React.FC = () => {
       {/* Tabs */}
       <div className={styles.tabs}>
         <button className={`${styles.tab} ${tab === 'crew_chief' ? styles.tabActive : ''}`} onClick={() => setTab('crew_chief')}>
-          Crew Chief {hiredCC ? '✓' : ''}
+          Crew Chiefs ({hiredCCs.length}/{MAX_STAFF})
         </button>
         <button className={`${styles.tab} ${tab === 'spotter' ? styles.tabActive : ''}`} onClick={() => setTab('spotter')}>
-          Spotter {hiredSpotter ? '✓' : ''}
+          Spotters ({hiredSpotters.length}/{MAX_STAFF})
         </button>
         <button className={`${styles.tab} ${tab === 'pit_crew' ? styles.tabActive : ''}`} onClick={() => setTab('pit_crew')}>
-          Pit Crew ({hiredPit.length}/5)
+          Pit Crew ({hiredPit.length}/6)
         </button>
       </div>
 
       {/* ======== CREW CHIEF TAB ======== */}
       {tab === 'crew_chief' && (
         <div className={styles.tabContent}>
-          {hiredCC && (
+          {hiredCCs.length > 0 && (
             <div className={styles.hired}>
-              <div className={styles.hiredInfo}>
-                <span className={styles.hiredLabel}>Current Crew Chief</span>
-                <span className={styles.hiredName}>{hiredCC.firstName} {hiredCC.lastName}</span>
-                <span className={styles.hiredSalary}>{formatMoney(hiredCC.salary)}/season</span>
-              </div>
-              <button className={styles.releaseBtn} onClick={handleReleaseCC}>Release</button>
+              <span className={styles.hiredLabel}>Signed Crew Chiefs ({hiredCCs.length}/{MAX_STAFF})</span>
+              {hiredCCs.map(cc => (
+                <div key={cc.id} className={styles.hiredRow}>
+                  <div className={styles.hiredInfo}>
+                    <span className={styles.hiredName}>{cc.firstName} {cc.lastName}</span>
+                    <span className={styles.hiredSalary}>{formatMoney(cc.salary)}/season</span>
+                  </div>
+                  <button className={styles.releaseBtn} onClick={() => handleReleaseCC(cc.id)}>Release</button>
+                </div>
+              ))}
             </div>
           )}
           <div className={styles.grid}>
-            {crewChiefs.map(cc => (
-              <div
-                key={cc.id}
-                className={`${styles.staffCard} ${hiredCC?.id === cc.id ? styles.hiredStaffCard : ''} ${selectedCC?.id === cc.id ? styles.selectedStaffCard : ''}`}
-                onClick={() => setSelectedCC(cc)}
-              >
-                <div className={styles.staffCardHeader}>
-                  <span className={styles.staffName}>{cc.firstName} {cc.lastName}</span>
-                  <span className={styles.staffSalary}>{formatMoney(cc.salary)}/season</span>
+            {crewChiefs.map(cc => {
+              const isHired = hiredCCs.some(c => c.id === cc.id)
+              const rosterFull = hiredCCs.length >= MAX_STAFF
+              return (
+                <div
+                  key={cc.id}
+                  className={`${styles.staffCard} ${isHired ? styles.hiredStaffCard : ''} ${selectedCC?.id === cc.id ? styles.selectedStaffCard : ''}`}
+                  onClick={() => setSelectedCC(cc)}
+                >
+                  <div className={styles.staffCardHeader}>
+                    <span className={styles.staffName}>{cc.firstName} {cc.lastName}</span>
+                    <span className={styles.staffSalary}>{formatMoney(cc.salary)}/season</span>
+                  </div>
+                  <span className={styles.staffMeta}>Age {cc.age} &middot; {cc.experience} yrs</span>
+                  <AttrBar label="Strategy" value={cc.strategy} />
+                  <AttrBar label="Setup" value={cc.setup} />
+                  <AttrBar label="Adaptability" value={cc.adaptability} />
+                  {isHired ? (
+                    <span className={styles.hiredTag}>Hired ✓</span>
+                  ) : rosterFull ? (
+                    <span className={styles.hiredTag}>Roster Full</span>
+                  ) : (
+                    <button className={styles.hireSmBtn} onClick={(e) => { e.stopPropagation(); handleHireCC(cc) }}>Hire</button>
+                  )}
                 </div>
-                <span className={styles.staffMeta}>Age {cc.age} &middot; {cc.experience} yrs</span>
-                <AttrBar label="Strategy" value={cc.strategy} />
-                <AttrBar label="Setup" value={cc.setup} />
-                <AttrBar label="Adaptability" value={cc.adaptability} />
-                {hiredCC?.id !== cc.id ? (
-                  <button className={styles.hireSmBtn} onClick={(e) => { e.stopPropagation(); handleHireCC(cc) }}>Hire</button>
-                ) : (
-                  <span className={styles.hiredTag}>Hired ✓</span>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -204,38 +230,48 @@ const Staff: React.FC = () => {
       {/* ======== SPOTTER TAB ======== */}
       {tab === 'spotter' && (
         <div className={styles.tabContent}>
-          {hiredSpotter && (
+          {hiredSpotters.length > 0 && (
             <div className={styles.hired}>
-              <div className={styles.hiredInfo}>
-                <span className={styles.hiredLabel}>Current Spotter</span>
-                <span className={styles.hiredName}>{hiredSpotter.firstName} {hiredSpotter.lastName}</span>
-                <span className={styles.hiredSalary}>{formatMoney(hiredSpotter.salary)}/season</span>
-              </div>
-              <button className={styles.releaseBtn} onClick={handleReleaseSpotter}>Release</button>
+              <span className={styles.hiredLabel}>Signed Spotters ({hiredSpotters.length}/{MAX_STAFF})</span>
+              {hiredSpotters.map(sp => (
+                <div key={sp.id} className={styles.hiredRow}>
+                  <div className={styles.hiredInfo}>
+                    <span className={styles.hiredName}>{sp.firstName} {sp.lastName}</span>
+                    <span className={styles.hiredSalary}>{formatMoney(sp.salary)}/season</span>
+                  </div>
+                  <button className={styles.releaseBtn} onClick={() => handleReleaseSpotter(sp.id)}>Release</button>
+                </div>
+              ))}
             </div>
           )}
           <div className={styles.grid}>
-            {spotters.map(sp => (
-              <div
-                key={sp.id}
-                className={`${styles.staffCard} ${hiredSpotter?.id === sp.id ? styles.hiredStaffCard : ''} ${selectedSp?.id === sp.id ? styles.selectedStaffCard : ''}`}
-                onClick={() => setSelectedSp(sp)}
-              >
-                <div className={styles.staffCardHeader}>
-                  <span className={styles.staffName}>{sp.firstName} {sp.lastName}</span>
-                  <span className={styles.staffSalary}>{formatMoney(sp.salary)}/season</span>
+            {spotters.map(sp => {
+              const isHired = hiredSpotters.some(s => s.id === sp.id)
+              const rosterFull = hiredSpotters.length >= MAX_STAFF
+              return (
+                <div
+                  key={sp.id}
+                  className={`${styles.staffCard} ${isHired ? styles.hiredStaffCard : ''} ${selectedSp?.id === sp.id ? styles.selectedStaffCard : ''}`}
+                  onClick={() => setSelectedSp(sp)}
+                >
+                  <div className={styles.staffCardHeader}>
+                    <span className={styles.staffName}>{sp.firstName} {sp.lastName}</span>
+                    <span className={styles.staffSalary}>{formatMoney(sp.salary)}/season</span>
+                  </div>
+                  <span className={styles.staffMeta}>Age {sp.age} &middot; {sp.experience} yrs</span>
+                  <AttrBar label="Awareness" value={sp.awareness} />
+                  <AttrBar label="Communication" value={sp.communication} />
+                  <AttrBar label="Positioning" value={sp.positioning} />
+                  {isHired ? (
+                    <span className={styles.hiredTag}>Hired ✓</span>
+                  ) : rosterFull ? (
+                    <span className={styles.hiredTag}>Roster Full</span>
+                  ) : (
+                    <button className={styles.hireSmBtn} onClick={(e) => { e.stopPropagation(); handleHireSpotter(sp) }}>Hire</button>
+                  )}
                 </div>
-                <span className={styles.staffMeta}>Age {sp.age} &middot; {sp.experience} yrs</span>
-                <AttrBar label="Awareness" value={sp.awareness} />
-                <AttrBar label="Communication" value={sp.communication} />
-                <AttrBar label="Positioning" value={sp.positioning} />
-                {hiredSpotter?.id !== sp.id ? (
-                  <button className={styles.hireSmBtn} onClick={(e) => { e.stopPropagation(); handleHireSpotter(sp) }}>Hire</button>
-                ) : (
-                  <span className={styles.hiredTag}>Hired ✓</span>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

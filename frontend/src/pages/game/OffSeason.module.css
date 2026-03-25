@@ -1,0 +1,298 @@
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.title {
+  font-size: 1.6rem;
+  margin-bottom: 1rem;
+  color: #ffd700;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-color, #333);
+}
+
+.tab {
+  padding: 0.6rem 1.2rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #999);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab:hover { color: var(--text-primary, #eee); }
+
+.tabActive {
+  color: #ffd700;
+  border-bottom-color: #ffd700;
+}
+
+/* Summary */
+.summarySection {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.standingsBlock h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary, #eee);
+}
+
+.payoutHighlight {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.payoutAmount {
+  color: #4caf50;
+  font-size: 1.1rem;
+}
+
+.standingsTable {
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.standingsHeader,
+.standingsRow {
+  display: grid;
+  grid-template-columns: 50px 1fr 70px 60px 100px;
+  padding: 0.5rem 0.75rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.standingsHeader {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted, #999);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.standingsRow {
+  border-top: 1px solid var(--border-color, #333);
+}
+
+.standingsRow:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.playerRow {
+  background: rgba(255, 215, 0, 0.07) !important;
+  border-left: 3px solid #ffd700;
+}
+
+.sCol1, .sCol3, .sCol4, .sCol5 { text-align: center; }
+
+/* Schedule Builder */
+.schedulerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.schedulerInfo {
+  color: var(--text-muted, #999);
+  font-size: 0.9rem;
+}
+
+.addTrackRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.trackSelect {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color, #444);
+  background: var(--bg-secondary, #1a1a2e);
+  color: var(--text-primary, #eee);
+  font-size: 0.9rem;
+}
+
+.defaultBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color, #444);
+  background: transparent;
+  color: var(--text-primary, #ccc);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.defaultBtn:hover { background: rgba(255, 255, 255, 0.06); }
+
+.emptyMsg {
+  color: var(--text-muted, #888);
+  font-style: italic;
+  padding: 1rem 0;
+}
+
+.raceList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.raceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.raceRound {
+  font-weight: 700;
+  color: #ffd700;
+  min-width: 30px;
+}
+
+.raceTrack {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.raceDateInput,
+.raceLapsInput {
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color, #444);
+  background: var(--bg-secondary, #1a1a2e);
+  color: var(--text-primary, #eee);
+  font-size: 0.8rem;
+}
+
+.raceDateInput { width: 140px; }
+.raceLapsInput { width: 70px; text-align: center; }
+
+.raceLapsLabel {
+  color: var(--text-muted, #999);
+  font-size: 0.75rem;
+}
+
+.removeBtn {
+  background: transparent;
+  border: none;
+  color: #e53935;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.removeBtn:hover { background: rgba(229, 57, 53, 0.15); }
+
+.raceCount {
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--text-muted, #999);
+  padding-top: 0.25rem;
+}
+
+/* Start New Season */
+.startSection {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+}
+
+.startCard {
+  width: 100%;
+  max-width: 500px;
+  padding: 2rem;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  text-align: center;
+}
+
+.startCard h2 {
+  margin-bottom: 1.25rem;
+  color: var(--text-primary, #eee);
+}
+
+.startDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.startRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color, #222);
+  font-size: 0.9rem;
+}
+
+.payoutGreen { color: #4caf50; font-weight: 600; }
+
+.startBtn {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ffd700, #ff9800);
+  color: #1a1a2e;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.startBtn:hover { opacity: 0.9; }
+
+.retired {
+  padding: 1rem;
+}
+
+.retired h3 {
+  color: #e53935;
+  margin-bottom: 0.5rem;
+}
+
+.retired p {
+  color: var(--text-muted, #999);
+  margin-bottom: 1rem;
+}
+
+.menuBtn {
+  padding: 0.5rem 1.5rem;
+  border: 1px solid var(--border-color, #444);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary, #eee);
+  cursor: pointer;
+}
+
+.menuBtn:hover { background: rgba(255, 255, 255, 0.06); }
