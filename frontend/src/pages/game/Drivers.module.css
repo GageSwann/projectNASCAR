@@ -1,0 +1,237 @@
+.page { max-width: 1100px; }
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.heading {
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
+  margin: 0;
+  color: var(--text-primary);
+}
+.balance {
+  font-weight: 700;
+  color: #4caf50;
+  font-size: 1.1rem;
+}
+
+/* Current driver banner */
+.currentDriver {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.1rem;
+  border: 2px solid #4caf50;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+}
+.currentInfo { display: flex; flex-direction: column; gap: 0.15rem; }
+.currentLabel { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+.currentName { font-weight: 700; font-size: 1rem; color: var(--text-primary); }
+.currentSalary { font-size: 0.8rem; color: #4caf50; }
+.releaseBtn {
+  background: transparent;
+  border: 2px solid #f44336;
+  color: #f44336;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.releaseBtn:hover { background: #f44336; color: #fff; }
+
+/* Filters */
+.filterRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.filterBtn {
+  background: transparent;
+  border: 2px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.filterBtn.active {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+/* Layout: list + detail */
+.content {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 1rem;
+  min-height: 500px;
+}
+
+/* Driver list */
+.listCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+  max-height: 65vh;
+  padding-right: 0.25rem;
+}
+.driverCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 0.85rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  font-family: inherit;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.driverCard:hover { border-color: var(--text-primary); transform: translateY(-1px); }
+.selectedCard { border-color: var(--text-primary); }
+.hiredCard { border-color: #4caf50; }
+.cardMain { display: flex; flex-direction: column; }
+.driverName { font-weight: 700; font-size: 0.9rem; }
+.driverMeta { font-size: 0.7rem; color: var(--text-muted); }
+.cardRight { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; }
+.salary { font-size: 0.7rem; color: var(--text-muted); }
+.overallBadge {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--text-primary);
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+/* Detail panel */
+.detailCol {
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  overflow-y: auto;
+  max-height: 72vh;
+}
+.detailName {
+  margin: 0 0 0.25rem;
+  font-size: 1.3rem;
+  color: var(--text-primary);
+}
+.detailMeta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.sectionTitle {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin: 1rem 0 0.5rem;
+}
+
+/* Attribute bars */
+.attrGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.attrRow {
+  display: grid;
+  grid-template-columns: 100px 1fr 36px;
+  align-items: center;
+  gap: 0.5rem;
+}
+.attrLabel {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.attrBar {
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.attrFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.attrVal {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Hire button */
+.hireBtn {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.85rem;
+  background: transparent;
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: color 0.3s;
+  z-index: 1;
+}
+.hireBtn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: var(--text-primary);
+  transition: left 0.3s;
+  z-index: -1;
+}
+.hireBtn:hover { color: var(--bg-primary); }
+.hireBtn:hover::after { left: 0; }
+
+.signedBadge {
+  margin-top: 1.25rem;
+  padding: 0.6rem;
+  text-align: center;
+  border: 2px solid #4caf50;
+  border-radius: var(--radius-md);
+  color: #4caf50;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.selectPrompt {
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 4rem;
+}
+
+@media (max-width: 768px) {
+  .content { grid-template-columns: 1fr; }
+  .listCol { max-height: 40vh; }
+}

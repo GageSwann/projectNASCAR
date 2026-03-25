@@ -30,20 +30,6 @@ const Settings: React.FC = () => {
 
   return (
     <div className={`${styles.container} ${toMenu ? styles.toMenu : ''}`}>
-      <div className={styles.checkeredFlag}>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-          <defs>
-            <pattern id="checkerboard" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-              <rect x="0" y="0" width="10" height="10" fill="white" />
-              <rect x="10" y="10" width="10" height="10" fill="white" />
-              <rect x="10" y="0" width="10" height="10" fill="black" />
-              <rect x="0" y="10" width="10" height="10" fill="black" />
-            </pattern>
-          </defs>
-          <rect width="100" height="100" fill="url(#checkerboard)" />
-        </svg>
-      </div>
-
       <div className={styles.content}>
         <div className={styles.header}>
           <button className={styles.backBtn} onClick={handleBackClick}>

@@ -4,4 +4,98 @@
   display: flex;
   flex-direction: column;
   transition: background var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.globalCheckeredFlag {
+  position: fixed;
+  top: -12%;
+  left: -12%;
+  width: 124%;
+  height: 124%;
+  opacity: 0.035;
+  pointer-events: none;
+  z-index: 1;
+  animation: appWave 9s linear infinite;
+  transform-origin: center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.globalCheckeredFlag svg {
+  width: 100%;
+  height: 100%;
+}
+
+.appContent {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+}
+
+@keyframes appWave {
+  0% {
+    transform: skewY(-1.7deg);
+  }
+  5% {
+    transform: skewY(-1.62deg);
+  }
+  10% {
+    transform: skewY(-1.37deg);
+  }
+  15% {
+    transform: skewY(-1deg);
+  }
+  20% {
+    transform: skewY(-0.53deg);
+  }
+  25% {
+    transform: skewY(0deg);
+  }
+  30% {
+    transform: skewY(0.53deg);
+  }
+  35% {
+    transform: skewY(1deg);
+  }
+  40% {
+    transform: skewY(1.37deg);
+  }
+  45% {
+    transform: skewY(1.62deg);
+  }
+  50% {
+    transform: skewY(1.7deg);
+  }
+  55% {
+    transform: skewY(1.62deg);
+  }
+  60% {
+    transform: skewY(1.37deg);
+  }
+  65% {
+    transform: skewY(1deg);
+  }
+  70% {
+    transform: skewY(0.53deg);
+  }
+  75% {
+    transform: skewY(0deg);
+  }
+  80% {
+    transform: skewY(-0.53deg);
+  }
+  85% {
+    transform: skewY(-1deg);
+  }
+  90% {
+    transform: skewY(-1.37deg);
+  }
+  95% {
+    transform: skewY(-1.62deg);
+  }
+  100% {
+    transform: skewY(-1.7deg);
+  }
 }

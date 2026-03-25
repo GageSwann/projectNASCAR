@@ -38,6 +38,11 @@
   --transition-fast: 0.15s ease;
   --transition-base: 0.3s ease;
   --transition-slow: 0.5s ease;
+
+  /* Page animation timing */
+  --page-enter-duration: 0.72s;
+  --page-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --page-enter-step: 0.08s;
 }
 
 /* Dark Mode */

@@ -1,0 +1,230 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: transparent;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.35);
+  border-right: 2px solid var(--border-color);
+  transition: width 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+  animation: slideIn var(--page-enter-duration) var(--page-enter-ease) both;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar.collapsed {
+  width: 0;
+  border-right: none;
+}
+
+/* Header inside sidebar */
+.sidebarHeader {
+  padding: 1.5rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.teamBranding {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.teamName {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.seriesBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.ownerLine {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.moneyLine {
+  margin-top: 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #4caf50;
+  letter-spacing: 0.5px;
+}
+
+/* Navigation */
+.nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 0;
+  gap: 2px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.navItem:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.navActive {
+  color: var(--text-primary);
+  border-left-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.navIcon {
+  font-size: 1rem;
+  width: 1.25rem;
+  text-align: center;
+}
+
+.navLabel {
+  white-space: nowrap;
+}
+
+/* Footer */
+.sidebarFooter {
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.seasonInfo {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.menuBtn {
+  width: 100%;
+  padding: 0.6rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menuBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Toggle button */
+.sidebarToggle {
+  position: fixed;
+  top: 12px;
+  left: 264px;
+  z-index: 20;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: left 0.3s ease, color 0.2s ease;
+}
+
+.sidebar.collapsed ~ .sidebarToggle,
+.collapsed ~ .sidebarToggle {
+  /* This won't work with sibling selector across the DOM.
+     Handled inline via JS instead. */
+}
+
+.sidebarToggle:hover {
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+/* Main content area */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  animation: fadeIn var(--page-enter-duration) var(--page-enter-ease) var(--page-enter-step) both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 30;
+  }
+
+  .sidebar.collapsed {
+    width: 0;
+  }
+
+  .sidebarToggle {
+    left: 8px;
+    top: 8px;
+  }
+
+  .main {
+    padding: 1rem;
+  }
+}

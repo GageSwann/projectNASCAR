@@ -1,7 +1,10 @@
 -- NASCAR Manager Database Schema
--- 2026 Cup Series Base
+-- 2026 Multi-Series (Truck, O'Reilly, Cup)
 
 -- Drop existing tables if they exist (for fresh starts)
+DROP TABLE IF EXISTS player_inventory CASCADE;
+DROP TABLE IF EXISTS store_items CASCADE;
+DROP TABLE IF EXISTS chassis CASCADE;
 DROP TABLE IF EXISTS race_results CASCADE;
 DROP TABLE IF EXISTS qualifying_results CASCADE;
 DROP TABLE IF EXISTS races CASCADE;
@@ -13,12 +16,33 @@ DROP TABLE IF EXISTS drivers CASCADE;
 DROP TABLE IF EXISTS cars CASCADE;
 DROP TABLE IF EXISTS teams CASCADE;
 DROP TABLE IF EXISTS tracks CASCADE;
+DROP TABLE IF EXISTS series CASCADE;
 DROP TABLE IF EXISTS career_saves CASCADE;
+
+-- Drop old enum types safely
+DROP TYPE IF EXISTS driver_status CASCADE;
+DROP TYPE IF EXISTS staff_role CASCADE;
+DROP TYPE IF EXISTS car_condition CASCADE;
+DROP TYPE IF EXISTS chassis_status CASCADE;
+DROP TYPE IF EXISTS item_category CASCADE;
 
 -- Enum types
 CREATE TYPE driver_status AS ENUM ('active', 'injured', 'suspended', 'retired');
 CREATE TYPE staff_role AS ENUM ('crew_chief', 'spotter', 'pit_crew');
 CREATE TYPE car_condition AS ENUM ('excellent', 'good', 'fair', 'poor', 'wrecked');
+CREATE TYPE chassis_status AS ENUM ('building', 'ready', 'damaged', 'totaled');
+CREATE TYPE item_category AS ENUM ('engine', 'suspension', 'tires', 'aerodynamics', 'brakes', 'transmission', 'safety', 'electronics');
+
+-- Series (Truck, O'Reilly, Cup)
+CREATE TABLE series (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  short_name VARCHAR(50) NOT NULL,
+  tier INT NOT NULL,            -- 1=Truck, 2=O'Reilly, 3=Cup
+  num_races INT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Career Saves (player progression)
 CREATE TABLE career_saves (
@@ -28,21 +52,25 @@ CREATE TABLE career_saves (
   current_season INT DEFAULT 2026,
   current_week INT DEFAULT 1,
   current_team_id INT,
+  current_series_id INT REFERENCES series(id),
   total_championships INT DEFAULT 0,
-  total_wins INT DEFAULT 0
+  total_wins INT DEFAULT 0,
+  money DECIMAL(14,2) DEFAULT 0
 );
 
 -- Teams
 CREATE TABLE teams (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL UNIQUE,
+  series_id INT NOT NULL REFERENCES series(id),
+  name VARCHAR(255) NOT NULL,
   founded_year INT,
   base_city VARCHAR(255),
   budget DECIMAL(12, 2) DEFAULT 5000000,
   reputation INT DEFAULT 50,
   garage_rating INT DEFAULT 50,
   headquarters VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(name, series_id)
 );
 
 -- Cars
@@ -155,6 +183,7 @@ CREATE TABLE seasons (
 CREATE TABLE races (
   id SERIAL PRIMARY KEY,
   season_id INT NOT NULL REFERENCES seasons(id),
+  series_id INT NOT NULL REFERENCES series(id),
   round INT NOT NULL,
   name VARCHAR(255) NOT NULL,
   track_id INT NOT NULL REFERENCES tracks(id),
@@ -200,12 +229,62 @@ CREATE TABLE race_results (
 -- Indexes for common queries
 CREATE INDEX idx_teams_budget ON teams(budget);
 CREATE INDEX idx_teams_reputation ON teams(reputation);
+CREATE INDEX idx_teams_series ON teams(series_id);
 CREATE INDEX idx_drivers_team_id ON drivers(team_id);
 CREATE INDEX idx_drivers_status ON drivers(status);
 CREATE INDEX idx_cars_team_id ON cars(team_id);
 CREATE INDEX idx_races_season_id ON races(season_id);
+CREATE INDEX idx_races_series_id ON races(series_id);
 CREATE INDEX idx_races_track_id ON races(track_id);
 CREATE INDEX idx_races_status ON races(status);
 CREATE INDEX idx_race_results_race_id ON race_results(race_id);
 CREATE INDEX idx_race_results_driver_id ON race_results(driver_id);
 CREATE INDEX idx_career_saves_player ON career_saves(player_name);
+
+-- Chassis (vehicles players build in the garage)
+CREATE TABLE chassis (
+  id SERIAL PRIMARY KEY,
+  career_save_id INT NOT NULL REFERENCES career_saves(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  series_id INT NOT NULL REFERENCES series(id),
+  status chassis_status DEFAULT 'building',
+  base_speed INT DEFAULT 40,
+  base_handling INT DEFAULT 40,
+  base_reliability INT DEFAULT 40,
+  base_aero INT DEFAULT 40,
+  weight_lbs INT DEFAULT 3200,
+  build_progress INT DEFAULT 0,  -- 0-100%
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Store Items (parts catalog available for purchase)
+CREATE TABLE store_items (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  category item_category NOT NULL,
+  tier INT NOT NULL DEFAULT 1,   -- 1=basic, 2=mid, 3=premium, 4=elite
+  price DECIMAL(10, 2) NOT NULL,
+  speed_bonus INT DEFAULT 0,
+  handling_bonus INT DEFAULT 0,
+  reliability_bonus INT DEFAULT 0,
+  aero_bonus INT DEFAULT 0,
+  weight_reduction INT DEFAULT 0,
+  description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Player Inventory (parts the player owns, installed on a chassis or in storage)
+CREATE TABLE player_inventory (
+  id SERIAL PRIMARY KEY,
+  career_save_id INT NOT NULL REFERENCES career_saves(id) ON DELETE CASCADE,
+  item_id INT NOT NULL REFERENCES store_items(id),
+  chassis_id INT REFERENCES chassis(id) ON DELETE SET NULL,  -- NULL = in storage
+  purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_chassis_career ON chassis(career_save_id);
+CREATE INDEX idx_chassis_series ON chassis(series_id);
+CREATE INDEX idx_store_items_category ON store_items(category);
+CREATE INDEX idx_store_items_tier ON store_items(tier);
+CREATE INDEX idx_player_inventory_career ON player_inventory(career_save_id);
+CREATE INDEX idx_player_inventory_chassis ON player_inventory(chassis_id);

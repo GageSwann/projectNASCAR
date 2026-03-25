@@ -1,0 +1,214 @@
+.page { max-width: 1100px; }
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.heading { font-size: clamp(1.4rem, 4vw, 1.8rem); margin: 0; color: var(--text-primary); }
+.balance { font-weight: 700; color: #4caf50; font-size: 1.1rem; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.tab {
+  flex: 1;
+  padding: 0.65rem;
+  background: transparent;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.tabActive { border-color: var(--text-primary); color: var(--text-primary); }
+
+.tabContent { animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* Hired banner */
+.hired {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  border: 2px solid #4caf50;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+}
+.hiredInfo { display: flex; flex-direction: column; gap: 0.1rem; }
+.hiredLabel { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+.hiredName { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+.hiredSalary { font-size: 0.75rem; color: #4caf50; }
+.releaseBtn {
+  background: transparent;
+  border: 2px solid #f44336;
+  color: #f44336;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.releaseBtn:hover { background: #f44336; color: #fff; }
+
+/* Grid of staff cards */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.75rem;
+}
+.staffCard {
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.staffCard:hover { border-color: var(--text-primary); transform: translateY(-2px); }
+.selectedStaffCard { border-color: var(--text-primary); }
+.hiredStaffCard { border-color: #4caf50; }
+.staffCardHeader { display: flex; justify-content: space-between; align-items: center; }
+.staffName { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+.staffSalary { font-size: 0.7rem; color: var(--text-muted); }
+.staffMeta { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+
+/* Attribute bars */
+.attrRow {
+  display: grid;
+  grid-template-columns: 90px 1fr 32px;
+  align-items: center;
+  gap: 0.4rem;
+}
+.attrLabel { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+.attrBar {
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.attrFill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.attrVal { font-size: 0.72rem; font-weight: 700; text-align: right; }
+
+/* Hire button inside cards */
+.hireSmBtn {
+  margin-top: 0.35rem;
+  padding: 0.35rem;
+  background: transparent;
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.hireSmBtn:hover { background: var(--text-primary); color: var(--bg-primary); }
+.hiredTag {
+  display: block;
+  margin-top: 0.35rem;
+  padding: 0.35rem;
+  text-align: center;
+  border: 2px solid #4caf50;
+  border-radius: var(--radius-sm);
+  color: #4caf50;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+/* Pit crew specific */
+.subHead {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+.pitRoster { margin-bottom: 1rem; }
+.pitSlots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.5rem;
+}
+.pitSlot {
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.6rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.pitFilled { border-color: #4caf50; }
+.pitRoleLabel { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
+.pitMemberName { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
+.pitMemberStats { font-size: 0.7rem; color: var(--text-muted); }
+.pitEmpty { font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+.releasePitBtn {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: 2px solid #f44336;
+  background: transparent;
+  color: #f44336;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+.releasePitBtn:hover { background: #f44336; color: #fff; }
+
+.pitRoleBadge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+/* Filter row */
+.filterRow {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.filterBtn {
+  background: transparent;
+  border: 2px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.filterBtn.active { border-color: var(--text-primary); color: var(--text-primary); }
+
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr; }
+  .pitSlots { grid-template-columns: 1fr; }
+  .tabs { flex-wrap: wrap; }
+}

@@ -4,7 +4,7 @@
   "description": "NASCAR Manager Game Backend",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "typeorm": "typeorm",
@@ -33,6 +33,7 @@
     "@types/express": "^4.17.25",
     "@types/node": "^20.8.0",
     "ts-node": "^10.9.1",
+    "tsx": "^4.20.6",
     "typescript": "^5.2.2"
   }
 }

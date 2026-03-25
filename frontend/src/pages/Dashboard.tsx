@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import styles from './Dashboard.module.css'
-import { Team, Race, Driver } from '../types'
+import { Team } from '../types'
 
 const Dashboard: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
   const [playerName, setPlayerName] = useState('')
-  const [currentWeek, setCurrentWeek] = useState(1)
+  const [currentWeek] = useState(1)
   const [activeTab, setActiveTab] = useState<'overview' | 'drivers' | 'races' | 'budget'>('overview')
   const navigate = useNavigate()
 
@@ -18,15 +18,7 @@ const Dashboard: React.FC = () => {
   }, [])
 
   if (!selectedTeam) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.emptyState}>
-          <h2>No Career Selected</h2>
-          <p>Start a new career to begin managing your team.</p>
-          <button onClick={() => navigate('/careers')}>Start New Career</button>
-        </div>
-      </div>
-    )
+    return <Navigate to="/load-career" replace />
   }
 
   return (

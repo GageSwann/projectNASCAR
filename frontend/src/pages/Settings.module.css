@@ -1,43 +1,10 @@
 .container {
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  background: transparent;
   padding: var(--spacing-md);
   position: relative;
   overflow: hidden;
-}
-
-.checkeredFlag {
-  position: fixed;
-  top: -12%;
-  left: -12%;
-  width: 124%;
-  height: 124%;
-  opacity: 0.03;
-  pointer-events: none;
-  z-index: 1;
-  animation: wave 8s ease-in-out infinite;
-  transform-origin: center;
-}
-
-.checkeredFlag svg {
-  width: 100%;
-  height: 100%;
-}
-
-@keyframes wave {
-  0%, 100% {
-    transform: skewY(0deg);
-  }
-  25% {
-    transform: skewY(2deg);
-  }
-  50% {
-    transform: skewY(0deg);
-  }
-  75% {
-    transform: skewY(-2deg);
-  }
 }
 
 .header {
@@ -45,7 +12,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: var(--spacing-lg);
-  animation: settingsEnter 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0s both;
+  animation: settingsEnter var(--page-enter-duration) var(--page-enter-ease) 0s both;
   position: relative;
   z-index: 10;
   padding-block: var(--spacing-sm);
@@ -136,6 +103,7 @@
 :global([data-theme="light"]) .backBtn:hover {
   background: #f5f5f5;
   color: #ffffff;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 :global([data-theme="dark"]) .backBtn {
@@ -151,6 +119,7 @@
 :global([data-theme="dark"]) .backBtn:hover {
   background: #0f0f0f;
   color: #000000;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.35);
 }
 
 .content {
@@ -165,7 +134,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-  animation: settingsEnter 0.78s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+  animation: settingsEnter var(--page-enter-duration) var(--page-enter-ease) var(--page-enter-step) both;
 }
 
 .settingsCard {
@@ -382,7 +351,7 @@
 
 .footer {
   margin-top: 0;
-  animation: settingsEnter 0.72s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+  animation: settingsEnter var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 2) both;
 }
 
 .toMenu .header,
@@ -410,6 +379,27 @@
 @media (max-width: 768px) {
   .container {
     padding: var(--spacing-md);
+  }
+
+  .header {
+    justify-content: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .backBtn {
+    position: static;
+    transform: none;
+  }
+
+  .backBtn:hover {
+    transform: translateY(-3px) skewX(-1deg);
+  }
+
+  .backBtn:active {
+    transform: scale(0.97) skewX(-0.5deg);
   }
 
   .settingItem {
