@@ -100,7 +100,6 @@ export interface Track {
   country: string;
   length_miles: number;
   turns: number;
-  banking: number;
   track_type: string;
 }
 
@@ -227,6 +226,7 @@ export interface Chassis {
   weight_lbs: number;
   build_progress: number;
   installedParts: InventoryItem[];
+  purchasePrice: number; // original purchase price for resale calculation
   created_at: string;
 }
 
@@ -252,6 +252,8 @@ export interface InventoryItem {
   purchased_at: string;
   installStartDate?: string; // ISO date when install began
   installDaysLeft?: number; // days remaining until install complete (0 = ready)
+  uninstallStartDate?: string; // ISO date when uninstall began
+  uninstallDaysLeft?: number; // days remaining until uninstall completes (0 = removed)
 }
 
 export interface PowerRankingEntry {
@@ -266,14 +268,14 @@ export interface PowerRankingEntry {
 }
 
 // ---- Track types ----
-export type TrackType = 'superspeedway' | 'short_track' | 'intermediate' | 'road_course' | 'street';
+export type TrackType = 'superspeedway' | 'short_track' | 'intermediate' | 'road_course' | 'street' | 'dirt';
 
 export interface TrackInfo {
   id: number;
   name: string;
+  location: string;
   type: TrackType;
   lengthMiles: number;
-  banking: string;
 }
 
 // ---- Market Driver ----
@@ -363,7 +365,7 @@ export interface DriverRaceResult {
   finishPos: number;
   lapsCompleted: number;
   lapsLed: number;
-  status: 'running' | 'dnf_wreck' | 'dnf_mechanical' | 'dnf_pit_error';
+  status: 'running' | 'dnf_wreck' | 'dnf_mechanical' | 'dnf_pit_error' | 'dns';
   pointsEarned: number;
   stagePoints: number;
   purseEarned: number;

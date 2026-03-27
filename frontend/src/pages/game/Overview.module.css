@@ -492,6 +492,28 @@
   gap: 0.4rem;
 }
 
+.notifGroup + .notifGroup {
+  margin-top: 0.4rem;
+}
+
+.notifLabel {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4caf50;
+  border: 1px solid #4caf50;
+  border-radius: var(--radius-sm);
+  padding: 0.15rem 0.45rem;
+  font-weight: 700;
+}
+
+.uninstallLabel {
+  color: #f44336;
+  border-color: #f44336;
+}
+
 .notifList li {
   font-size: 0.9rem;
   color: var(--text-primary);

@@ -6,6 +6,19 @@ import { SCHEDULES } from '../../data/schedule'
 import { getActiveSlotId, loadSlot, saveSlot } from '../../services/saveManager'
 import { initializeStandings } from '../../data/raceSim'
 
+type ServiceNotice = {
+  installed: string[]
+  uninstalled: string[]
+}
+
+const REQUIRED_PART_CATEGORIES = ['engine', 'suspension', 'aerodynamics', 'brakes', 'transmission'] as const
+
+function isPartReadyForBuild(part: { item: { category: string }; installDaysLeft?: number; uninstallDaysLeft?: number }) {
+  const installDone = part.installDaysLeft === undefined || part.installDaysLeft <= 0
+  const notUninstalling = part.uninstallDaysLeft === undefined || part.uninstallDaysLeft <= 0
+  return installDone && notUninstalling
+}
+
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T12:00:00')
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -99,7 +112,7 @@ const Overview: React.FC = () => {
   // Sim menu
   const [simOpen, setSimOpen] = useState(false)
   const simRef = useRef<HTMLDivElement | null>(null)
-  const [installedParts, setInstalledParts] = useState<string[]>([])
+  const [serviceNotice, setServiceNotice] = useState<ServiceNotice | null>(null)
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -118,18 +131,50 @@ const Overview: React.FC = () => {
     const data = loadSlot(slotId)
     if (!data) return
 
-    const completed: string[] = []
+    const completedInstalls: string[] = []
+    const completedUninstalls: string[] = []
     let newDate = data.currentDate || '2026-01-01'
     for (let i = 0; i < days; i++) {
       newDate = addDays(newDate, 1)
       for (const ch of data.chassis) {
+        const remainingParts = []
         for (const part of ch.installedParts) {
           if (part.installDaysLeft !== undefined && part.installDaysLeft > 0) {
+            const previousInstallDays = part.installDaysLeft
             part.installDaysLeft--
-            if (part.installDaysLeft === 0) {
-              completed.push(`${part.item.name} installed on ${ch.name}`)
+            if (previousInstallDays > 0 && part.installDaysLeft === 0) {
+              completedInstalls.push(`${part.item.name} on ${ch.name}`)
             }
           }
+
+          if (part.uninstallDaysLeft !== undefined && part.uninstallDaysLeft > 0) {
+            const previousUninstallDays = part.uninstallDaysLeft
+            part.uninstallDaysLeft--
+            if (part.uninstallDaysLeft <= 0) {
+              if (previousUninstallDays > 0) {
+                completedUninstalls.push(`${part.item.name} from ${ch.name}`)
+              }
+              data.inventory.push({
+                ...part,
+                chassisId: undefined,
+                installStartDate: undefined,
+                installDaysLeft: undefined,
+                uninstallStartDate: undefined,
+                uninstallDaysLeft: undefined,
+              })
+              continue
+            }
+          }
+
+          remainingParts.push(part)
+        }
+        ch.installedParts = remainingParts
+
+        if (ch.status !== 'damaged' && ch.status !== 'totaled') {
+          const completeBuild = REQUIRED_PART_CATEGORIES.every((category) =>
+            ch.installedParts.some((part) => part.item.category === category && isPartReadyForBuild(part))
+          )
+          ch.status = completeBuild ? 'ready' : 'building'
         }
       }
     }
@@ -154,8 +199,8 @@ const Overview: React.FC = () => {
     saveSlot(data)
     refreshSave()
 
-    if (completed.length > 0) {
-      setInstalledParts(completed)
+    if (completedInstalls.length > 0 || completedUninstalls.length > 0) {
+      setServiceNotice({ installed: completedInstalls, uninstalled: completedUninstalls })
     }
   }
 
@@ -362,17 +407,35 @@ const Overview: React.FC = () => {
         </div>
       </div>
 
-      {/* Part Installation Notification */}
-      {installedParts.length > 0 && (
-        <div className={styles.notifOverlay} onClick={() => setInstalledParts([])}>
+      {/* Garage Service Notification */}
+      {serviceNotice && (
+        <div className={styles.notifOverlay} onClick={() => setServiceNotice(null)}>
           <div className={styles.notifModal} onClick={(e) => e.stopPropagation()}>
-            <h3 className={styles.notifTitle}>Parts Installed!</h3>
-            <ul className={styles.notifList}>
-              {installedParts.map((msg, i) => (
-                <li key={i}>{msg}</li>
-              ))}
-            </ul>
-            <button className={styles.notifBtn} onClick={() => setInstalledParts([])}>OK</button>
+            <h3 className={styles.notifTitle}>Garage Service Complete</h3>
+
+            {serviceNotice.installed.length > 0 && (
+              <div className={styles.notifGroup}>
+                <span className={styles.notifLabel}>Installed</span>
+                <ul className={styles.notifList}>
+                  {serviceNotice.installed.map((msg, i) => (
+                    <li key={`inst-${i}`}>{msg}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {serviceNotice.uninstalled.length > 0 && (
+              <div className={styles.notifGroup}>
+                <span className={`${styles.notifLabel} ${styles.uninstallLabel}`}>Uninstalled</span>
+                <ul className={styles.notifList}>
+                  {serviceNotice.uninstalled.map((msg, i) => (
+                    <li key={`uninst-${i}`}>{msg}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <button className={styles.notifBtn} onClick={() => setServiceNotice(null)}>OK</button>
           </div>
         </div>
       )}

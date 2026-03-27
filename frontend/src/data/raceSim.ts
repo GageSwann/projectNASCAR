@@ -87,7 +87,8 @@ function getDriverTrackBonus(driver: MarketDriver, trackType: TrackType): number
     case 'short_track': return driver.short_track
     case 'intermediate': return driver.intermediate
     case 'road_course': return driver.road_course
-    case 'street': return driver.road_course // street uses road course skill
+    case 'street': return driver.road_course // street courses use road course skill
+    case 'dirt': return driver.short_track // dirt uses short-track skill until dedicated ratings exist
   }
 }
 
@@ -193,6 +194,7 @@ export function simulateRace(
   round: number,
   totalLaps: number,
   purse: number = 0,
+  includePlayer: boolean = true,
 ): SeasonRaceResult {
   const seriesId = save.selectedSeries?.id ?? 3
   const trackType = getTrackType(trackName)
@@ -203,8 +205,10 @@ export function simulateRace(
   const entrants: (EntrantStats & { raceScore: number })[] = []
 
   // Player entry
-  const playerStats = computePlayerStats(save, trackType)
-  entrants.push({ ...playerStats, raceScore: 0 })
+  if (includePlayer && save.hiredDriver) {
+    const playerStats = computePlayerStats(save, trackType)
+    entrants.push({ ...playerStats, raceScore: 0 })
+  }
 
   // AI entries — use the full AICarEntry system
   const playerNumbers = new Set<string>()
@@ -427,7 +431,7 @@ function applyDriverProgression(
   const isWreck = result.status === 'dnf_wreck'
 
   // Track-specific stat changes
-  const trackAttrKey = trackType === 'street' ? 'road_course' : trackType
+  const trackAttrKey = trackType as keyof typeof driver
   if (isDNF && isWreck) {
     // Wreck: lose track-type stat
     driver[trackAttrKey] = clamp(driver[trackAttrKey] - 1, 1, 99)

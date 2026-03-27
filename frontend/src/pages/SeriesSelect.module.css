@@ -105,44 +105,59 @@
 
 .seriesCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border-color: var(--accent-primary);
 }
 
 .seriesCard.selected {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 20px rgba(var(--accent-primary-rgb, 0, 0, 0), 0.25);
+  border: 2px solid var(--accent-primary);
+  box-shadow: 0 0 20px rgba(var(--accent-primary-rgb, 0, 0, 0), 0.3);
 }
 
-.tierBadge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.7rem;
+.seriesCard.selected.series1 {
+  border: 2px solid #d32f2f;
+  box-shadow: 0 0 20px rgba(211, 47, 47, 0.4);
+}
+
+.seriesCard.selected.series2 {
+  border: 2px solid #2e7d32;
+  box-shadow: 0 0 20px rgba(46, 125, 50, 0.4);
+}
+
+.seriesCard.selected.series3 {
+  border: 2px solid #e0e0e0;
+  box-shadow: 0 0 20px rgba(224, 224, 224, 0.4);
+}
+
+/* Series color schemes */
+.seriesCard.series1:hover {
+  border: 2px solid #d32f2f;
+  box-shadow: 0 8px 24px rgba(211, 47, 47, 0.4);
+}
+
+.seriesCard.series2:hover {
+  border: 2px solid #2e7d32;
+  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.4);
+}
+
+.seriesCard.series3:hover {
+  border: 2px solid #e0e0e0;
+  box-shadow: 0 8px 24px rgba(224, 224, 224, 0.4);
+}
+
+.selectedIndicator {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  border-radius: 50%;
+  font-size: 1.25rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  border-radius: 999px;
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  border: 1px solid var(--text-muted);
-}
-
-.tierBadge.tier1 {
-  background: rgba(76, 175, 80, 0.15);
-  color: #4caf50;
-  border-color: #4caf50;
-}
-
-.tierBadge.tier2 {
-  background: rgba(33, 150, 243, 0.15);
-  color: #2196f3;
-  border-color: #2196f3;
-}
-
-.tierBadge.tier3 {
-  background: rgba(255, 193, 7, 0.15);
-  color: #ffc107;
-  border-color: #ffc107;
+  box-shadow: 0 2px 8px rgba(var(--accent-primary-rgb, 0, 0, 0), 0.3);
 }
 
 .seriesName {

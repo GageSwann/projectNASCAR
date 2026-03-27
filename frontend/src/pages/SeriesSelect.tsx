@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import styles from './SeriesSelect.module.css'
 import { Series } from '../types'
 import { getActiveSlotId, loadSlot, saveSlot } from '../services/saveManager'
+import { getScheduleForYear } from '../data/schedule'
 
 const SERIES_DATA: Series[] = [
   {
@@ -15,7 +16,7 @@ const SERIES_DATA: Series[] = [
   },
   {
     id: 2,
-    name: "O'Reilly Series",
+    name: "NASCAR O'Reilly Auto Parts Series",
     short_name: 'OReilly',
     tier: 2,
     num_races: 33,
@@ -32,12 +33,6 @@ const SERIES_DATA: Series[] = [
 ]
 
 const TEAM_COUNTS: Record<number, number> = { 1: 20, 2: 25, 3: 30 }
-
-const TIER_LABELS: Record<number, string> = {
-  1: 'Entry Level',
-  2: 'Mid Tier',
-  3: 'Premier',
-}
 
 const SeriesSelect: React.FC = () => {
   const navigate = useNavigate()
@@ -70,6 +65,7 @@ const SeriesSelect: React.FC = () => {
     if (!series) return
 
     slot.selectedSeries = series
+    slot.activeSchedule = getScheduleForYear(series.id, slot.currentSeason ?? new Date().getFullYear())
     slot.lastPlayedAt = new Date().toISOString()
     saveSlot(slot)
 
@@ -92,12 +88,10 @@ const SeriesSelect: React.FC = () => {
         {SERIES_DATA.map((series) => (
           <div
             key={series.id}
-            className={`${styles.seriesCard} ${selected === series.id ? styles.selected : ''}`}
+            className={`${styles.seriesCard} ${styles[`series${series.id}`]} ${selected === series.id ? styles.selected : ''}`}
             onClick={() => setSelected(series.id)}
           >
-            <span className={`${styles.tierBadge} ${styles[`tier${series.tier}`]}`}>
-              {TIER_LABELS[series.tier]}
-            </span>
+            {selected === series.id && <span className={styles.selectedIndicator}>✓</span>}
             <h2 className={styles.seriesName}>{series.name}</h2>
             <span className={styles.seriesRaces}>{series.num_races} Races</span>
             <p className={styles.seriesDesc}>{series.description}</p>

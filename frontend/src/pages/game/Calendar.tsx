@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useNavigate } from 'react-router-dom'
 import styles from './Calendar.module.css'
 import { GameContext, TrackType } from '../../types'
-import { SCHEDULES, RaceInfo } from '../../data/schedule'
+import { SCHEDULES, RaceInfo, getScheduleForYear } from '../../data/schedule'
 import { getTrack } from '../../data/tracks'
 import { getActiveSlotId, loadSlot, saveSlot } from '../../services/saveManager'
 
@@ -19,6 +19,7 @@ const TRACK_TYPE_LABELS: Record<TrackType, string> = {
   intermediate: 'Intermediate',
   road_course: 'Road Course',
   street: 'Street Circuit',
+  dirt: 'Dirt',
 }
 
 const TRACK_TYPE_COLORS: Record<string, string> = {
@@ -26,7 +27,20 @@ const TRACK_TYPE_COLORS: Record<string, string> = {
   short_track: '#ff9800',
   intermediate: '#4caf50',
   road_course: '#2196f3',
-  street: '#9c27b0',
+  dirt: '#8d6e63',
+}
+
+type ServiceNotice = {
+  installed: string[]
+  uninstalled: string[]
+}
+
+const REQUIRED_PART_CATEGORIES = ['engine', 'suspension', 'aerodynamics', 'brakes', 'transmission'] as const
+
+function isPartReadyForBuild(part: { item: { category: string }; installDaysLeft?: number; uninstallDaysLeft?: number }) {
+  const installDone = part.installDaysLeft === undefined || part.installDaysLeft <= 0
+  const notUninstalling = part.uninstallDaysLeft === undefined || part.uninstallDaysLeft <= 0
+  return installDone && notUninstalling
 }
 
 function formatMoney(n: number) {
@@ -54,40 +68,55 @@ function formatDateFull(dateStr: string) {
 
 const Calendar: React.FC = () => {
   const { saveData, refreshSave } = useOutletContext<GameContext>()
+  const navigate = useNavigate()
   const seriesId = saveData.selectedSeries?.id ?? 3
-  const schedule = saveData.activeSchedule ?? SCHEDULES[seriesId] ?? SCHEDULES[3]
-  const currentDate = saveData.currentDate || '2026-01-01'
-
+  const currentDate = saveData.currentDate || `${new Date().getFullYear()}-01-01`
   const currentDateObj = new Date(currentDate + 'T12:00:00')
-  const [viewMonth, setViewMonth] = useState(currentDateObj.getMonth())
-  const [selectedRace, setSelectedRace] = useState<RaceInfo | null>(null)
-  const [pendingSimDate, setPendingSimDate] = useState<string | null>(null)
-
   const year = currentDateObj.getFullYear()
+  const schedule = saveData.activeSchedule ?? getScheduleForYear(seriesId, year)
 
-  // Build a map of date -> race for quick lookups
+  const [viewMonth, setViewMonth] = useState(currentDateObj.getMonth())
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [pendingSimDate, setPendingSimDate] = useState<string | null>(null)
+  const [showSeasonOver, setShowSeasonOver] = useState(false)
+  const [serviceNotice, setServiceNotice] = useState<ServiceNotice | null>(null)
+
+  const scheduleByDate = useMemo(() => {
+    return [...schedule].sort((a, b) => a.date.localeCompare(b.date))
+  }, [schedule])
+
+  // The season ends the day after the final championship race
+  const seasonEndDate = useMemo(() => {
+    const pointsRaces = scheduleByDate.filter(r => !r.isExhibition)
+    const lastRace = pointsRaces[pointsRaces.length - 1]
+    return lastRace ? addDays(lastRace.date, 1) : null
+  }, [scheduleByDate])
+
+  // Build a map of date -> races for quick lookups
   const racesByDate = useMemo(() => {
-    const map = new Map<string, RaceInfo>()
-    for (const race of schedule) {
-      map.set(race.date, race)
+    const map = new Map<string, RaceInfo[]>()
+    for (const race of scheduleByDate) {
+      const existing = map.get(race.date) ?? []
+      existing.push(race)
+      map.set(race.date, existing)
     }
     return map
-  }, [schedule])
+  }, [scheduleByDate])
 
   const daysInMonth = getDaysInMonth(year, viewMonth)
   const firstDay = getFirstDayOfMonth(year, viewMonth)
 
   // Build calendar grid cells
-  const cells: { day: number; race?: RaceInfo; isPast: boolean; isToday: boolean }[] = []
+  const cells: { day: number; races?: RaceInfo[]; isPast: boolean; isToday: boolean }[] = []
   for (let i = 0; i < firstDay; i++) {
     cells.push({ day: 0, isPast: false, isToday: false })
   }
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    const race = racesByDate.get(dateStr)
+    const races = racesByDate.get(dateStr)
     const isPast = dateStr < currentDate
     const isToday = dateStr === currentDate
-    cells.push({ day: d, race, isPast, isToday })
+    cells.push({ day: d, races, isPast, isToday })
   }
 
   const prevMonth = () => setViewMonth(m => Math.max(0, m - 1))
@@ -97,20 +126,62 @@ const Calendar: React.FC = () => {
 
   // Advance time helper
   const advanceTime = (days: number) => {
+    const targetDate = addDays(currentDate, days)
+    if (seasonEndDate && targetDate >= seasonEndDate) {
+      setShowSeasonOver(true)
+      return
+    }
     const slotId = getActiveSlotId()
     if (!slotId) return
     const data = loadSlot(slotId)
     if (!data) return
+
+    const completedInstalls: string[] = []
+    const completedUninstalls: string[] = []
 
     let newDate = data.currentDate || '2026-01-01'
     for (let i = 0; i < days; i++) {
       newDate = addDays(newDate, 1)
       // Tick down install timers on all chassis parts
       for (const ch of data.chassis) {
+        const remainingParts = []
         for (const part of ch.installedParts) {
           if (part.installDaysLeft !== undefined && part.installDaysLeft > 0) {
+            const previousInstallDays = part.installDaysLeft
             part.installDaysLeft--
+            if (previousInstallDays > 0 && part.installDaysLeft === 0) {
+              completedInstalls.push(`${part.item.name} on ${ch.name}`)
+            }
           }
+
+          if (part.uninstallDaysLeft !== undefined && part.uninstallDaysLeft > 0) {
+            const previousUninstallDays = part.uninstallDaysLeft
+            part.uninstallDaysLeft--
+            if (part.uninstallDaysLeft <= 0) {
+              if (previousUninstallDays > 0) {
+                completedUninstalls.push(`${part.item.name} from ${ch.name}`)
+              }
+              data.inventory.push({
+                ...part,
+                chassisId: undefined,
+                installStartDate: undefined,
+                installDaysLeft: undefined,
+                uninstallStartDate: undefined,
+                uninstallDaysLeft: undefined,
+              })
+              continue
+            }
+          }
+
+          remainingParts.push(part)
+        }
+        ch.installedParts = remainingParts
+
+        if (ch.status !== 'damaged' && ch.status !== 'totaled') {
+          const completeBuild = REQUIRED_PART_CATEGORIES.every((category) =>
+            ch.installedParts.some((part) => part.item.category === category && isPartReadyForBuild(part))
+          )
+          ch.status = completeBuild ? 'ready' : 'building'
         }
       }
     }
@@ -140,9 +211,17 @@ const Calendar: React.FC = () => {
     data.lastPlayedAt = new Date().toISOString()
     saveSlot(data)
     refreshSave()
+
+    if (completedInstalls.length > 0 || completedUninstalls.length > 0) {
+      setServiceNotice({ installed: completedInstalls, uninstalled: completedUninstalls })
+    }
   }
 
   const simToDate = (targetDate: string) => {
+    if (seasonEndDate && targetDate >= seasonEndDate) {
+      setShowSeasonOver(true)
+      return
+    }
     const diff = Math.ceil(
       (new Date(targetDate + 'T12:00:00').getTime() - new Date(currentDate + 'T12:00:00').getTime()) / 86400000
     )
@@ -166,14 +245,12 @@ const Calendar: React.FC = () => {
   // Next upcoming race
   const nextRace = useMemo(() => {
     const racedRounds = new Set((saveData.seasonResults ?? []).map(r => r.round))
-    return schedule.find(r => r.date >= currentDate && !racedRounds.has(r.round)) ?? null
-  }, [schedule, currentDate, saveData.seasonResults])
+    return scheduleByDate.find(r => r.date >= currentDate && !racedRounds.has(r.round)) ?? null
+  }, [scheduleByDate, currentDate, saveData.seasonResults])
 
   // Check if today has a race
-  const todayRace = racesByDate.get(currentDate)
-
-  const selectedTrackInfo = selectedRace ? getTrack(selectedRace.track) : null
-  const selectedTrackType: TrackType = selectedTrackInfo?.type ?? 'intermediate'
+  const todayRaces = racesByDate.get(currentDate) ?? []
+  const selectedRaces = selectedDate ? (racesByDate.get(selectedDate) ?? []) : []
 
   return (
     <div className={styles.page}>
@@ -183,6 +260,29 @@ const Calendar: React.FC = () => {
           <span className={styles.currentDateLabel}>{formatDateFull(currentDate)}</span>
         </div>
       </div>
+
+      {serviceNotice && (
+        <div className={styles.serviceNotice}>
+          <div className={styles.serviceNoticeHead}>
+            <strong>Garage Update</strong>
+            <button className={styles.serviceDismiss} onClick={() => setServiceNotice(null)}>Dismiss</button>
+          </div>
+
+          {serviceNotice.installed.length > 0 && (
+            <div className={styles.serviceGroup}>
+              <span className={styles.serviceLabel}>Installed</span>
+              <p className={styles.serviceText}>{serviceNotice.installed.join(' • ')}</p>
+            </div>
+          )}
+
+          {serviceNotice.uninstalled.length > 0 && (
+            <div className={styles.serviceGroup}>
+              <span className={`${styles.serviceLabel} ${styles.uninstallLabel}`}>Uninstalled</span>
+              <p className={styles.serviceText}>{serviceNotice.uninstalled.join(' • ')}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Sim Controls */}
       <div className={styles.advanceBar}>
@@ -202,9 +302,9 @@ const Calendar: React.FC = () => {
             </div>
           )}
         </div>
-        {todayRace && (
+        {todayRaces.length > 0 && (
           <span className={styles.raceTodayBadge}>
-            Race Today: {todayRace.name}
+            {todayRaces.length === 1 ? `Race Today: ${todayRaces[0].name}` : `${todayRaces.length} Events Today`}
           </span>
         )}
       </div>
@@ -247,30 +347,36 @@ const Calendar: React.FC = () => {
               return (
                 <div
                   key={i}
-                  className={`${styles.dayCell} ${cell.day === 0 ? styles.emptyCell : ''} ${cell.race ? styles.raceCell : ''} ${cell.isPast ? styles.completedCell : ''} ${cell.isToday ? styles.currentCell : ''} ${selectedRace && cell.race && selectedRace.date === cell.race.date && selectedRace.name === cell.race.name ? styles.selectedCell : ''} ${isFuture && !cell.race ? styles.clickableCell : ''}`}
+                  className={`${styles.dayCell} ${cell.day === 0 ? styles.emptyCell : ''} ${cell.races?.length ? styles.raceCell : ''} ${cell.isPast ? styles.completedCell : ''} ${cell.isToday ? styles.currentCell : ''} ${selectedDate && dateStr === selectedDate ? styles.selectedCell : ''} ${isFuture && !cell.races?.length ? styles.clickableCell : ''}`}
                   onClick={() => {
-                    if (cell.race) {
-                      setSelectedRace(cell.race)
+                    if (cell.races?.length) {
+                      setSelectedDate(dateStr)
                     } else if (isFuture && cell.day > 0) {
                       setPendingSimDate(dateStr)
                     }
                   }}
-                  title={isFuture && !cell.race ? `Click to sim to ${dateStr}` : undefined}
+                  title={isFuture && !cell.races?.length ? `Click to sim to ${dateStr}` : undefined}
                 >
                   {cell.day > 0 && (
                     <>
                       <span className={styles.dayNum}>{cell.day}</span>
-                      {cell.race && (() => {
-                        const tInfo = getTrack(cell.race.track)
-                        const tType = tInfo?.type ?? 'intermediate'
-                        return (
-                          <span
-                            className={styles.raceDot}
-                            style={{ background: cell.isPast ? 'var(--text-muted)' : TRACK_TYPE_COLORS[tType] }}
-                            title={cell.race.name}
-                          />
-                        )
-                      })()}
+                      {cell.races && (
+                        <span className={styles.raceDots}>
+                          {cell.races.slice(0, 3).map((race, idx) => {
+                            const tInfo = getTrack(race.track)
+                            const tType = tInfo?.type ?? 'intermediate'
+                            return (
+                              <span
+                                key={`${race.name}-${idx}`}
+                                className={styles.raceDot}
+                                style={{ background: cell.isPast ? 'var(--text-muted)' : TRACK_TYPE_COLORS[tType] }}
+                                title={race.name}
+                              />
+                            )
+                          })}
+                          {cell.races.length > 3 && <span className={styles.raceCount}>+{cell.races.length - 3}</span>}
+                        </span>
+                      )}
                     </>
                   )}
                 </div>
@@ -281,86 +387,91 @@ const Calendar: React.FC = () => {
 
         {/* Race detail / schedule list */}
         <div className={styles.detailCol}>
-          {selectedRace ? (
+          {selectedRaces.length > 0 ? (
             <div className={styles.raceDetail}>
-              <div className={styles.raceDetailHeader}>
-                {selectedRace.isExhibition ? (
-                  <span className={styles.roundBadge} style={{ borderColor: '#ff9800', color: '#ff9800' }}>Exhibition</span>
-                ) : (
-                  <span className={styles.roundBadge}>Round {selectedRace.round}</span>
-                )}
-                <span
-                  className={styles.trackTypeBadge}
-                  style={{ borderColor: TRACK_TYPE_COLORS[selectedTrackType], color: TRACK_TYPE_COLORS[selectedTrackType] }}
-                >
-                  {TRACK_TYPE_LABELS[selectedTrackType]}
-                </span>
-              </div>
-              <h2 className={styles.raceName}>{selectedRace.name}</h2>
-              <span className={styles.trackName}>{selectedRace.track}</span>
-              <div className={styles.raceStats}>
-                <div className={styles.raceStat}>
-                  <span>Date</span>
-                  <strong>{new Date(selectedRace.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong>
-                </div>
-                <div className={styles.raceStat}>
-                  <span>Laps</span>
-                  <strong>{selectedRace.laps}</strong>
-                </div>
-                <div className={styles.raceStat}>
-                  <span>Purse</span>
-                  <strong>{formatMoney(selectedRace.purse)}</strong>
-                </div>
-                {selectedTrackInfo && (
-                  <>
-                    <div className={styles.raceStat}>
-                      <span>Length</span>
-                      <strong>{selectedTrackInfo.lengthMiles} mi</strong>
+              <h2 className={styles.raceGroupTitle}>{formatDateFull(selectedRaces[0].date)}</h2>
+              <div className={styles.sameDayList}>
+                {selectedRaces.map((race, idx) => {
+                  const selectedTrackInfo = getTrack(race.track)
+                  const selectedTrackType: TrackType = selectedTrackInfo?.type ?? 'intermediate'
+                  const trackDisplayName = selectedTrackInfo ? `${race.track} (${selectedTrackInfo.location})` : race.track
+                  return (
+                    <div key={`${race.name}-${idx}`} className={styles.sameDayItem}>
+                      <div className={styles.raceDetailHeader}>
+                        {race.isExhibition ? (
+                          <span className={styles.roundBadge} style={{ borderColor: '#ff9800', color: '#ff9800' }}>Exhibition</span>
+                        ) : (
+                          <span className={styles.roundBadge}>Round {race.round}</span>
+                        )}
+                        <span
+                          className={styles.trackTypeBadge}
+                          style={{ borderColor: TRACK_TYPE_COLORS[selectedTrackType], color: TRACK_TYPE_COLORS[selectedTrackType] }}
+                        >
+                          {TRACK_TYPE_LABELS[selectedTrackType]}
+                        </span>
+                      </div>
+                      <h3 className={styles.raceName}>{race.name}</h3>
+                      <span className={styles.trackName}>{trackDisplayName}</span>
+                      <div className={styles.raceStats}>
+                        <div className={styles.raceStat}>
+                          <span>Laps</span>
+                          <strong>{race.laps}</strong>
+                        </div>
+                        <div className={styles.raceStat}>
+                          <span>Purse</span>
+                          <strong>{formatMoney(race.purse)}</strong>
+                        </div>
+                        {selectedTrackInfo && (
+                          <>
+                            <div className={styles.raceStat}>
+                              <span>Length</span>
+                              <strong>{selectedTrackInfo.lengthMiles} mi</strong>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className={styles.raceStat}>
-                      <span>Banking</span>
-                      <strong>{selectedTrackInfo.banking}</strong>
-                    </div>
-                  </>
-                )}
+                  )
+                })}
               </div>
               <div className={styles.raceStatus}>
-                {selectedRace.date < currentDate
+                {selectedRaces[0].date < currentDate
                   ? '✓ Past'
-                  : selectedRace.date === currentDate
+                  : selectedRaces[0].date === currentDate
                     ? '► Race Day!'
                     : (() => {
-                        const diff = Math.ceil((new Date(selectedRace.date + 'T12:00:00').getTime() - new Date(currentDate + 'T12:00:00').getTime()) / 86400000)
+                        const diff = Math.ceil((new Date(selectedRaces[0].date + 'T12:00:00').getTime() - new Date(currentDate + 'T12:00:00').getTime()) / 86400000)
                         return `${diff} day${diff !== 1 ? 's' : ''} away`
                       })()
                 }
               </div>
-              {selectedRace.date > currentDate && (
-                <button className={styles.simToRaceBtn} onClick={() => setPendingSimDate(selectedRace.date)}>
+              {selectedRaces[0].date > currentDate && (
+                <button className={styles.simToRaceBtn} onClick={() => setPendingSimDate(selectedRaces[0].date)}>
                   Sim to Race Day
                 </button>
               )}
             </div>
           ) : (
             <div className={styles.noSelection}>
-              <p>Select a race on the calendar to view details</p>
+              <p>Select a date on the calendar to view its event details</p>
             </div>
           )}
 
           {/* Upcoming races list */}
           <h3 className={styles.subHead}>Season Schedule</h3>
           <div className={styles.scheduleList}>
-            {schedule.map((race, idx) => {
+            {scheduleByDate.map((race, idx) => {
               const tInfo = getTrack(race.track)
               const tType = tInfo?.type ?? 'intermediate'
+              const trackDisplayName = tInfo ? `${race.track} (${tInfo.location})` : race.track
               const isPast = race.date < currentDate
               const isToday = race.date === currentDate
               return (
                 <button
                   key={`${race.round}-${race.name}-${idx}`}
-                  className={`${styles.scheduleRow} ${isPast ? styles.scheduleCompleted : ''} ${isToday ? styles.scheduleCurrent : ''} ${selectedRace && selectedRace.date === race.date && selectedRace.name === race.name ? styles.scheduleSelected : ''}`}
+                  className={`${styles.scheduleRow} ${isPast ? styles.scheduleCompleted : ''} ${isToday ? styles.scheduleCurrent : ''} ${selectedDate === race.date ? styles.scheduleSelected : ''}`}
                   onClick={() => {
-                    setSelectedRace(race)
+                    setSelectedDate(race.date)
                     const d = new Date(race.date + 'T12:00:00')
                     setViewMonth(d.getMonth())
                   }}
@@ -374,7 +485,7 @@ const Calendar: React.FC = () => {
                   />
                   <div className={styles.schedInfo}>
                     <span className={styles.schedName}>{race.name}</span>
-                    <span className={styles.schedTrack}>{race.track}</span>
+                    <span className={styles.schedTrack}>{trackDisplayName}</span>
                   </div>
                   <span className={styles.schedDate}>
                     {new Date(race.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -411,7 +522,35 @@ const Calendar: React.FC = () => {
             </p>
             <div className={styles.confirmBtns}>
               <button className={styles.confirmCancel} onClick={() => setPendingSimDate(null)}>Cancel</button>
-              <button className={styles.confirmOk} onClick={() => { simToDate(pendingSimDate); setPendingSimDate(null) }}>Simulate</button>
+              <button className={styles.confirmOk} onClick={() => {
+                if (seasonEndDate && pendingSimDate >= seasonEndDate) {
+                  setPendingSimDate(null)
+                  setShowSeasonOver(true)
+                  return
+                }
+                simToDate(pendingSimDate)
+                setPendingSimDate(null)
+              }}>Simulate</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Season Over Popup */}
+      {showSeasonOver && (
+        <div className={styles.confirmOverlay} onClick={() => setShowSeasonOver(false)}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.confirmTitle}>Season Complete!</h3>
+            <p className={styles.confirmText}>
+              The <strong>{saveData.selectedSeries?.name ?? 'series'}</strong> season is over.
+              The championship race has wrapped up — it’s time to head to the offseason.
+            </p>
+            <p className={styles.confirmText} style={{ marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              Review your season results, build next year’s schedule, and get ready for {(saveData.currentSeason ?? 2026) + 1}.
+            </p>
+            <div className={styles.confirmBtns}>
+              <button className={styles.confirmCancel} onClick={() => setShowSeasonOver(false)}>Stay on Calendar</button>
+              <button className={styles.confirmOk} onClick={() => { setShowSeasonOver(false); navigate('/game/offseason') }}>Go to Offseason →</button>
             </div>
           </div>
         </div>

@@ -37,6 +37,52 @@
   gap: 0.5rem;
 }
 
+.listTools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.listCount {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.sortField {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.sortSelect {
+  min-height: 30px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.sortSelect:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
 .chassisCard {
   text-align: left;
   padding: 1rem;
@@ -106,6 +152,16 @@
   border: 1px solid #4caf50;
   border-radius: var(--radius-sm);
   color: #4caf50;
+}
+
+.installingMeta {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #ff9800;
+  border-radius: var(--radius-sm);
+  color: #ff9800;
 }
 
 .empty {
@@ -264,6 +320,58 @@
   margin-bottom: 0.5rem;
 }
 
+.buildPanel {
+  margin: 0.9rem 0 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.buildRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.buildLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.buildValue {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.buildBar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.buildFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff9800, #4caf50);
+}
+
+.buildMeta {
+  margin-top: 0.45rem;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 /* Stats grid */
 .statsGrid {
   display: grid;
@@ -391,6 +499,16 @@
   color: #fff;
 }
 
+.removeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.removeBtn:disabled:hover {
+  background: transparent;
+  color: #f44336;
+}
+
 .installBtn {
   background: transparent;
   border: 1px solid #4caf50;
@@ -407,6 +525,11 @@
   background: rgba(255, 152, 0, 0.04);
 }
 
+.uninstallingRow {
+  border-color: #f44336;
+  background: rgba(244, 67, 54, 0.05);
+}
+
 .installBadge {
   margin-left: 0.5rem;
   font-size: 0.65rem;
@@ -419,6 +542,18 @@
   border-radius: var(--radius-sm);
 }
 
+.uninstallBadge {
+  margin-left: 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #f44336;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #f44336;
+  border-radius: var(--radius-sm);
+}
+
 .selectPrompt {
   color: var(--text-muted);
   text-align: center;
@@ -426,8 +561,112 @@
   font-size: 1rem;
 }
 
+/* ---- Scrap Confirmation Dialog ---- */
+.scrapOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.scrapModal {
+  background: var(--bg-secondary);
+  border: 2px solid #f44336;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+}
+
+.scrapTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+  color: #f44336;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scrapText {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.scrapValue {
+  margin: 0 0 1.25rem;
+  font-size: 1rem;
+  color: #4caf50;
+  font-weight: 700;
+  padding: 0.75rem;
+  background: rgba(76, 175, 80, 0.08);
+  border-radius: var(--radius-md);
+}
+
+.scrapBtns {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.scrapCancel {
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+.scrapCancel:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.scrapConfirm {
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  background: transparent;
+  border: 2px solid #f44336;
+  color: #f44336;
+}
+
+.scrapConfirm:hover {
+  background: #f44336;
+  color: #fff;
+}
+
 @media (max-width: 768px) {
   .content {
     grid-template-columns: 1fr;
+  }
+
+  .listTools {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sortField {
+    justify-content: space-between;
   }
 }

@@ -202,6 +202,12 @@ const OwnerCreation: React.FC = () => {
   const [slotError, setSlotError] = useState('')
   const [natOpen, setNatOpen] = useState(false)
   const natRef = useRef<HTMLDivElement | null>(null)
+  const [monthOpen, setMonthOpen] = useState(false)
+  const monthRef = useRef<HTMLDivElement | null>(null)
+  const [dayOpen, setDayOpen] = useState(false)
+  const dayRef = useRef<HTMLDivElement | null>(null)
+  const [yearOpen, setYearOpen] = useState(false)
+  const yearRef = useRef<HTMLDivElement | null>(null)
 
   // Team creation fields
   const [teamName, setTeamName] = useState('')
@@ -227,12 +233,11 @@ const OwnerCreation: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (natRef.current && !natRef.current.contains(e.target as Node)) {
-        setNatOpen(false)
-      }
-      if (cityRef.current && !cityRef.current.contains(e.target as Node)) {
-        setCityOpen(false)
-      }
+      if (natRef.current && !natRef.current.contains(e.target as Node)) setNatOpen(false)
+      if (monthRef.current && !monthRef.current.contains(e.target as Node)) setMonthOpen(false)
+      if (dayRef.current && !dayRef.current.contains(e.target as Node)) setDayOpen(false)
+      if (yearRef.current && !yearRef.current.contains(e.target as Node)) setYearOpen(false)
+      if (cityRef.current && !cityRef.current.contains(e.target as Node)) setCityOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
@@ -303,8 +308,8 @@ const OwnerCreation: React.FC = () => {
       chassis: [],
       inventory: [],
       currentWeek: 1,
-      currentDate: '2026-01-01',
-      currentSeason: 2026,
+      currentDate: `${currentYear}-01-01`,
+      currentSeason: currentYear,
       totalChampionships: 0,
       totalWins: 0,
       carNumber: '1',
@@ -347,6 +352,8 @@ const OwnerCreation: React.FC = () => {
     yearOptions.push(y)
   }
 
+  const ownerCardElevated = natOpen || monthOpen || dayOpen || yearOpen
+
   return (
     <div className={`${styles.container} ${toMenu ? styles.toMenu : ''}`}>
       <div className={styles.header}>
@@ -361,199 +368,233 @@ const OwnerCreation: React.FC = () => {
 
       {slotError && <div className={styles.errorBanner}>{slotError}</div>}
 
-      <div className={styles.formCard}>
-        <h2 className={styles.sectionTitle}>Personal Information</h2>
+      <div className={styles.formGrid}>
+        {/* Owner Profile */}
+        <div className={`${styles.formCard} ${ownerCardElevated ? styles.formCardElevated : ''}`}>
+          <h2 className={styles.sectionTitle}>Owner Profile</h2>
 
-        <div className={styles.fieldRow}>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="firstName">First Name</label>
-            <input
-              id="firstName"
-              className={styles.input}
-              type="text"
-              placeholder="Enter first name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              maxLength={30}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="lastName">Last Name</label>
-            <input
-              id="lastName"
-              className={styles.input}
-              type="text"
-              placeholder="Enter last name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              maxLength={30}
-            />
-          </div>
-        </div>
-
-        <div className={styles.fieldRow}>
-          <div className={styles.field}>
-            <label className={styles.label}>Nationality</label>
-            <div className={styles.dropdown} ref={natRef}>
-              <button
-                type="button"
-                className={`${styles.dropdownTrigger} ${natOpen ? styles.dropdownOpen : ''}`}
-                onClick={() => setNatOpen((o) => !o)}
-              >
-                {nationality || 'Select nationality'}
-              </button>
-              {natOpen && (
-                <ul className={styles.dropdownList}>
-                  {NATIONALITIES.map((n) => (
-                    <li
-                      key={n}
-                      className={`${styles.dropdownItem} ${nationality === n ? styles.dropdownItemActive : ''}`}
-                      onClick={() => { setNationality(n); setNatOpen(false) }}
-                    >
-                      {n}
-                    </li>
-                  ))}
-                </ul>
-              )}
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="firstName">First Name</label>
+              <input
+                id="firstName"
+                className={styles.input}
+                type="text"
+                placeholder="Enter first name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                maxLength={30}
+              />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="lastName">Last Name</label>
+              <input
+                id="lastName"
+                className={styles.input}
+                type="text"
+                placeholder="Enter last name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                maxLength={30}
+              />
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className={styles.formCard}>
-        <h2 className={styles.sectionTitle}>Date of Birth</h2>
-
-        <div className={styles.fieldRow}>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="birthMonth">Month</label>
-            <select
-              id="birthMonth"
-              className={styles.select}
-              value={birthMonth}
-              onChange={(e) => setBirthMonth(Number(e.target.value))}
-            >
-              <option value={0}>Select month</option>
-              {MONTHS.map((m, i) => (
-                <option key={m} value={i + 1}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="birthDay">Day</label>
-            <select
-              id="birthDay"
-              className={styles.select}
-              value={birthDay}
-              onChange={(e) => setBirthDay(Number(e.target.value))}
-            >
-              <option value={0}>Select day</option>
-              {dayOptions.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="birthYear">Year</label>
-            <select
-              id="birthYear"
-              className={styles.select}
-              value={birthYear}
-              onChange={(e) => setBirthYear(Number(e.target.value))}
-            >
-              <option value={0}>Select year</option>
-              {yearOptions.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {age !== null && (
-          <div className={styles.ageDisplay}>
-            Age: <strong>{age}</strong>
-          </div>
-        )}
-      </div>
-
-      <div className={styles.formCard}>
-        <h2 className={styles.sectionTitle}>Team Information</h2>
-
-        <div className={styles.fieldRow}>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="teamName">Team Name</label>
-            <input
-              id="teamName"
-              className={styles.input}
-              type="text"
-              placeholder="Enter team name"
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              maxLength={40}
-            />
-          </div>
-        </div>
-
-        <div className={styles.fieldRow}>
-          <div className={styles.field}>
-            <label className={styles.label}>City</label>
-            <div className={styles.dropdown} ref={cityRef}>
-              <button
-                type="button"
-                className={`${styles.dropdownTrigger} ${cityOpen ? styles.dropdownOpen : ''}`}
-                onClick={() => setCityOpen((o) => !o)}
-              >
-                {teamCity || 'Select city'}
-              </button>
-              {cityOpen && (
-                <ul className={styles.dropdownList}>
-                  {US_CITIES.map((c) => (
-                    <li
-                      key={c}
-                      className={`${styles.dropdownItem} ${teamCity === c ? styles.dropdownItemActive : ''}`}
-                      onClick={() => { setTeamCity(c); setCityOpen(false) }}
-                    >
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.fieldRow}>
-          <div className={styles.field}>
-            <label className={styles.label}>Manufacturer</label>
-            <div className={styles.manufacturerGroup}>
-              {MANUFACTURERS.map((m) => (
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label className={styles.label}>Nationality</label>
+              <div className={styles.dropdown} ref={natRef}>
                 <button
-                  key={m}
                   type="button"
-                  className={`${styles.manufacturerBtn} ${manufacturer === m ? styles.manufacturerBtnActive : ''}`}
-                  onClick={() => setManufacturer(m)}
+                  className={`${styles.dropdownTrigger} ${natOpen ? styles.dropdownOpen : ''}`}
+                  onClick={() => setNatOpen((o) => !o)}
                 >
-                  {m}
+                  {nationality || 'Select nationality'}
                 </button>
-              ))}
+                {natOpen && (
+                  <ul className={styles.dropdownList}>
+                    {NATIONALITIES.map((n) => (
+                      <li
+                        key={n}
+                        className={`${styles.dropdownItem} ${nationality === n ? styles.dropdownItemActive : ''}`}
+                        onClick={() => { setNationality(n); setNatOpen(false) }}
+                      >
+                        {n}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
+
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label className={styles.label}>Month</label>
+              <div className={styles.dropdown} ref={monthRef}>
+                <button
+                  type="button"
+                  className={`${styles.dropdownTrigger} ${monthOpen ? styles.dropdownOpen : ''}`}
+                  onClick={() => setMonthOpen((o) => !o)}
+                >
+                  {birthMonth > 0 ? MONTHS[birthMonth - 1] : 'Select month'}
+                </button>
+                {monthOpen && (
+                  <ul className={styles.dropdownList}>
+                    {MONTHS.map((m, i) => (
+                      <li
+                        key={m}
+                        className={`${styles.dropdownItem} ${birthMonth === i + 1 ? styles.dropdownItemActive : ''}`}
+                        onClick={() => { setBirthMonth(i + 1); setMonthOpen(false) }}
+                      >
+                        {m}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Day</label>
+              <div className={styles.dropdown} ref={dayRef}>
+                <button
+                  type="button"
+                  className={`${styles.dropdownTrigger} ${dayOpen ? styles.dropdownOpen : ''}`}
+                  onClick={() => setDayOpen((o) => !o)}
+                >
+                  {birthDay > 0 ? String(birthDay) : 'Select day'}
+                </button>
+                {dayOpen && (
+                  <ul className={styles.dropdownList}>
+                    {dayOptions.map((d) => (
+                      <li
+                        key={d}
+                        className={`${styles.dropdownItem} ${birthDay === d ? styles.dropdownItemActive : ''}`}
+                        onClick={() => { setBirthDay(d); setDayOpen(false) }}
+                      >
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Year</label>
+              <div className={styles.dropdown} ref={yearRef}>
+                <button
+                  type="button"
+                  className={`${styles.dropdownTrigger} ${yearOpen ? styles.dropdownOpen : ''}`}
+                  onClick={() => setYearOpen((o) => !o)}
+                >
+                  {birthYear > 0 ? String(birthYear) : 'Select year'}
+                </button>
+                {yearOpen && (
+                  <ul className={styles.dropdownList}>
+                    {yearOptions.map((y) => (
+                      <li
+                        key={y}
+                        className={`${styles.dropdownItem} ${birthYear === y ? styles.dropdownItemActive : ''}`}
+                        onClick={() => { setBirthYear(y); setYearOpen(false) }}
+                      >
+                        {y}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {age !== null && (
+            <div className={styles.ageDisplay}>
+              Age: <strong>{age}</strong>
+            </div>
+          )}
         </div>
-      </div>
 
-      <div className={styles.formCard}>
-        <h2 className={styles.sectionTitle}>Starting Budget</h2>
+        {/* Team Setup */}
+        <div className={`${styles.formCard} ${cityOpen ? styles.formCardElevated : ''}`}>
+          <h2 className={styles.sectionTitle}>Team Setup</h2>
 
-        <div className={styles.moneyGrid}>
-          {STARTING_MONEY_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`${styles.moneyBtn} ${startingMoney === opt.value ? styles.moneyBtnActive : ''}`}
-              onClick={() => setStartingMoney(opt.value)}
-            >
-              {opt.label}
-            </button>
-          ))}
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="teamName">Team Name</label>
+              <input
+                id="teamName"
+                className={styles.input}
+                type="text"
+                placeholder="Enter team name"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                maxLength={40}
+              />
+            </div>
+          </div>
+
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label className={styles.label}>City</label>
+              <div className={styles.dropdown} ref={cityRef}>
+                <button
+                  type="button"
+                  className={`${styles.dropdownTrigger} ${cityOpen ? styles.dropdownOpen : ''}`}
+                  onClick={() => setCityOpen((o) => !o)}
+                >
+                  {teamCity || 'Select city'}
+                </button>
+                {cityOpen && (
+                  <ul className={styles.dropdownList}>
+                    {US_CITIES.map((c) => (
+                      <li
+                        key={c}
+                        className={`${styles.dropdownItem} ${teamCity === c ? styles.dropdownItemActive : ''}`}
+                        onClick={() => { setTeamCity(c); setCityOpen(false) }}
+                      >
+                        {c}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label className={styles.label}>Manufacturer</label>
+              <div className={styles.manufacturerGroup}>
+                {MANUFACTURERS.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={`${styles.manufacturerBtn} ${manufacturer === m ? styles.manufacturerBtnActive : ''}`}
+                    onClick={() => setManufacturer(m)}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label className={styles.label}>Starting Budget</label>
+              <div className={styles.moneyGrid}>
+                {STARTING_MONEY_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`${styles.moneyBtn} ${startingMoney === opt.value ? styles.moneyBtnActive : ''}`}
+                    onClick={() => setStartingMoney(opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

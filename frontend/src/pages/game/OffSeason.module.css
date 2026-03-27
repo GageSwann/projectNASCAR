@@ -118,6 +118,69 @@
   font-size: 0.9rem;
 }
 
+/* Exhibition events block */
+.exhibitionBlock {
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.exhibitionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 165, 0, 0.08);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffaa00;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.exhibitionNote {
+  font-weight: 400;
+  color: var(--text-muted, #999);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.exBadge {
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #ffaa00;
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.35);
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+  min-width: 28px;
+  text-align: center;
+}
+
+.raceName {
+  min-width: 110px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary, #eee);
+}
+
+.trackSelectInline {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color, #444);
+  background: var(--bg-secondary, #1a1a2e);
+  color: var(--text-primary, #eee);
+  font-size: 0.8rem;
+  min-width: 0;
+}
+
+.raceCounter {
+  font-size: 0.82rem;
+  color: var(--text-muted, #999);
+  white-space: nowrap;
+}
+
 .addTrackRow {
   display: flex;
   gap: 0.75rem;

@@ -45,6 +45,7 @@
 }
 .trackShape[data-type="superspeedway"] { border-radius: 45%; }
 .trackShape[data-type="short_track"] { border-radius: 30%; width: 90px; height: 70px; }
+.trackShape[data-type="dirt"] { border-radius: 30%; width: 90px; height: 70px; background: rgba(141, 110, 99, 0.08); }
 .trackShape[data-type="road_course"],
 .trackShape[data-type="street"] { border-radius: 10px 25px 10px 35px; }
 .trackTypeLabel { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-muted); }

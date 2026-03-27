@@ -7,7 +7,7 @@ import {
   DRIVER_CHAMPIONSHIP_PURSE,
   OWNER_CHAMPIONSHIP_PURSE,
 } from '../../types'
-import { SCHEDULES } from '../../data/schedule'
+import { getScheduleForYear, EXHIBITION_SLOTS, SERIES_RACE_COUNT, ExhibitionSlot } from '../../data/schedule'
 import { TRACKS } from '../../data/tracks'
 import { getActiveSlotId, loadSlot, saveSlot } from '../../services/saveManager'
 
@@ -21,7 +21,7 @@ const DEFAULT_LAPS: Record<string, number> = {
   intermediate: 267,
   short_track: 400,
   road_course: 70,
-  street: 75,
+  dirt: 150,
 }
 
 const DEFAULT_PURSE = 5000000
@@ -30,10 +30,31 @@ const OffSeason: React.FC = () => {
   const { saveData, refreshSave } = useOutletContext<GameContext>()
   const navigate = useNavigate()
   const seriesId = saveData.selectedSeries?.id ?? 3
+  const nextYear = saveData.currentSeason + 1
+  const maxRaces = SERIES_RACE_COUNT[seriesId] ?? 36
 
   const [tab, setTab] = useState<Tab>('summary')
+
+  // Regular championship races (no exhibitions)
   const [customRaces, setCustomRaces] = useState<RaceScheduleEntry[]>(
-    saveData.customSchedule ?? []
+    saveData.customSchedule?.filter(r => !r.isExhibition) ?? []
+  )
+
+  // Exhibition events — always present, track/date editable
+  const defaultExhibitions = EXHIBITION_SLOTS[seriesId] ?? []
+  const savedExhibitions = saveData.customSchedule?.filter(r => r.isExhibition) ?? []
+  const [exhibitions, setExhibitions] = useState<RaceScheduleEntry[]>(
+    savedExhibitions.length === defaultExhibitions.length
+      ? savedExhibitions
+      : defaultExhibitions.map((ex: ExhibitionSlot) => ({
+          round: 0,
+          name: ex.name,
+          track: ex.defaultTrack,
+          date: `${nextYear}-${ex.defaultDateMMDD}`,
+          laps: ex.laps,
+          purse: ex.purse,
+          isExhibition: true,
+        }))
   )
 
   // Championship standings
@@ -63,11 +84,11 @@ const OffSeason: React.FC = () => {
 
   // ---------- Schedule Builder ----------
   const addRace = (trackName: string) => {
+    if (customRaces.length >= maxRaces) return
     const track = TRACKS.find(t => t.name === trackName)
     if (!track) return
-    const nextYear = saveData.currentSeason + 1
     const round = customRaces.length + 1
-    // Default date: space races ~1 week apart starting Feb
+    // Space races ~1 week apart starting mid-Feb
     const baseDate = new Date(`${nextYear}-02-15T12:00:00`)
     baseDate.setDate(baseDate.getDate() + (round - 1) * 7)
     const dateStr = baseDate.toISOString().slice(0, 10)
@@ -91,8 +112,26 @@ const OffSeason: React.FC = () => {
     )
   }
 
+  const updateExhibition = (index: number, field: 'track' | 'date' | 'laps', value: string | number) => {
+    setExhibitions(prev =>
+      prev.map((ex, i) => (i === index ? { ...ex, [field]: value } : ex))
+    )
+  }
+
   const useDefaultSchedule = () => {
     setCustomRaces([])
+    // Reset exhibitions back to defaults
+    setExhibitions(
+      defaultExhibitions.map((ex: ExhibitionSlot) => ({
+        round: 0,
+        name: ex.name,
+        track: ex.defaultTrack,
+        date: `${nextYear}-${ex.defaultDateMMDD}`,
+        laps: ex.laps,
+        purse: ex.purse,
+        isExhibition: true,
+      }))
+    )
   }
 
   // ---------- Start New Season ----------
@@ -107,15 +146,6 @@ const OffSeason: React.FC = () => {
     fresh.ownerChampionshipEarnings = (fresh.ownerChampionshipEarnings ?? 0) + playerOwnerPayout
     fresh.money += playerDriverPayout + playerOwnerPayout
 
-    // Set custom schedule if built
-    if (customRaces.length > 0) {
-      fresh.customSchedule = customRaces
-      fresh.activeSchedule = customRaces
-    } else {
-      fresh.customSchedule = undefined
-      fresh.activeSchedule = undefined
-    }
-
     // Reset for new season
     fresh.currentSeason += 1
     fresh.currentDate = `${fresh.currentSeason}-01-01`
@@ -124,6 +154,18 @@ const OffSeason: React.FC = () => {
     fresh.standings = []
     fresh.ownerStandings = []
     fresh.seasonPhase = 'preseason'
+
+    // Set active schedule for the new season (using the already-incremented year)
+    // Combine exhibition events + regular races into one ordered list
+    if (customRaces.length > 0) {
+      const combined: RaceScheduleEntry[] = [...exhibitions, ...customRaces]
+      fresh.customSchedule = combined
+      fresh.activeSchedule = combined
+    } else {
+      // Default schedule already contains the correct exhibitions via getScheduleForYear
+      fresh.customSchedule = undefined
+      fresh.activeSchedule = getScheduleForYear(seriesId, fresh.currentSeason)
+    }
 
     saveSlot(fresh)
     refreshSave()
@@ -214,15 +256,55 @@ const OffSeason: React.FC = () => {
       {tab === 'schedule' && (
         <div className={styles.schedulerSection}>
           <p className={styles.schedulerInfo}>
-            Build a custom schedule for next season, or leave it blank to use the default {SCHEDULES[seriesId]?.filter(r => !r.isExhibition).length ?? 36}-race calendar.
+            Build a custom schedule for Season {nextYear}. Exhibition events are always included (track &amp; date are editable).
+            Add up to <strong>{maxRaces}</strong> regular races.
           </p>
 
-          {/* Add track */}
+          {/* --- Exhibition events (always present) --- */}
+          <div className={styles.exhibitionBlock}>
+            <div className={styles.exhibitionHeader}>
+              <span>Exhibition Events</span>
+              <span className={styles.exhibitionNote}>Required every season — change track/date as you like</span>
+            </div>
+            {exhibitions.map((ex, i) => (
+              <div key={ex.name} className={styles.raceRow}>
+                <span className={styles.exBadge}>EX</span>
+                <span className={styles.raceName}>{ex.name}</span>
+                <select
+                  className={styles.trackSelectInline}
+                  value={ex.track}
+                  onChange={e => updateExhibition(i, 'track', e.target.value)}
+                >
+                  {TRACKS.map(t => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+                <input
+                  className={styles.raceDateInput}
+                  type="date"
+                  value={ex.date}
+                  onChange={e => updateExhibition(i, 'date', e.target.value)}
+                />
+                <input
+                  className={styles.raceLapsInput}
+                  type="number"
+                  min={10}
+                  max={300}
+                  value={ex.laps}
+                  onChange={e => updateExhibition(i, 'laps', parseInt(e.target.value) || 60)}
+                />
+                <span className={styles.raceLapsLabel}>laps</span>
+              </div>
+            ))}
+          </div>
+
+          {/* --- Regular races --- */}
           <div className={styles.addTrackRow}>
             <select
               id="track-select"
               className={styles.trackSelect}
               defaultValue=""
+              disabled={customRaces.length >= maxRaces}
               onChange={e => {
                 if (e.target.value) {
                   addRace(e.target.value)
@@ -231,7 +313,7 @@ const OffSeason: React.FC = () => {
               }}
             >
               <option value="" disabled>
-                Add a track...
+                {customRaces.length >= maxRaces ? `Max ${maxRaces} races reached` : 'Add a race...'}
               </option>
               {TRACKS.map(t => (
                 <option key={t.id} value={t.name}>
@@ -239,14 +321,14 @@ const OffSeason: React.FC = () => {
                 </option>
               ))}
             </select>
+            <span className={styles.raceCounter}>{customRaces.length} / {maxRaces}</span>
             <button className={styles.defaultBtn} onClick={useDefaultSchedule}>
               Use Default Schedule
             </button>
           </div>
 
-          {/* Custom races list */}
           {customRaces.length === 0 ? (
-            <p className={styles.emptyMsg}>No custom races added — default schedule will be used.</p>
+            <p className={styles.emptyMsg}>No custom races added — default {maxRaces}-race schedule will be used.</p>
           ) : (
             <div className={styles.raceList}>
               {customRaces.map((r, i) => (
@@ -271,7 +353,6 @@ const OffSeason: React.FC = () => {
                   <button className={styles.removeBtn} onClick={() => removeRace(i)}>✕</button>
                 </div>
               ))}
-              <div className={styles.raceCount}>{customRaces.length} race(s)</div>
             </div>
           )}
         </div>
@@ -297,7 +378,7 @@ const OffSeason: React.FC = () => {
               </div>
               <div className={styles.startRow}>
                 <span>Schedule</span>
-                <span>{customRaces.length > 0 ? `Custom (${customRaces.length} races)` : 'Default'}</span>
+                <span>{customRaces.length > 0 ? `Custom (${customRaces.length} races + ${exhibitions.length} exhibition)` : 'Default'}</span>
               </div>
             </div>
             {canContinue ? (

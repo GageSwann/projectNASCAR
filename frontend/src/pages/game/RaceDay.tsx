@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import styles from './RaceDay.module.css'
-import { GameContext, DriverRaceResult, OwnerStandingsEntry } from '../../types'
+import { GameContext, DriverRaceResult, ItemCategory, OwnerStandingsEntry } from '../../types'
 import { SCHEDULES } from '../../data/schedule'
 import { getTrack } from '../../data/tracks'
 import { simulateRace, updateStandings, initializeStandings, applyTalentProgression, applyPartWear } from '../../data/raceSim'
@@ -20,7 +20,46 @@ const TRACK_TYPE_LABELS: Record<string, string> = {
   short_track: 'Short Track',
   intermediate: 'Intermediate',
   road_course: 'Road Course',
-  street: 'Street Circuit',
+  dirt: 'Dirt',
+}
+
+const REQUIRED_PIT_CREW_MEMBERS = 6
+const REQUIRED_PART_CATEGORIES: ItemCategory[] = ['engine', 'suspension', 'aerodynamics', 'brakes', 'transmission']
+
+function isPartActiveForRace(part: { installDaysLeft?: number; uninstallDaysLeft?: number }): boolean {
+  const installDone = part.installDaysLeft === undefined || part.installDaysLeft <= 0
+  const notUninstalling = part.uninstallDaysLeft === undefined || part.uninstallDaysLeft <= 0
+  return installDone && notUninstalling
+}
+
+function isChassisRaceReady(chassis: GameContext['saveData']['chassis'][number]): boolean {
+  if (chassis.status !== 'ready') return false
+  return REQUIRED_PART_CATEGORIES.every((category) =>
+    chassis.installedParts.some((part) => part.item.category === category && isPartActiveForRace(part))
+  )
+}
+
+function createPlayerDNSResult(save: GameContext['saveData'], finishPos: number): DriverRaceResult {
+  const driverName = save.hiredDriver
+    ? `${save.hiredDriver.firstName} ${save.hiredDriver.lastName}`
+    : 'Unassigned Driver'
+
+  return {
+    driverId: save.hiredDriver?.id ?? -1,
+    driverName,
+    carNumber: save.carNumber || '1',
+    teamName: save.selectedTeam?.name ?? 'Player Team',
+    manufacturer: save.selectedTeam?.manufacturer ?? 'Chevrolet',
+    startPos: 0,
+    finishPos,
+    lapsCompleted: 0,
+    lapsLed: 0,
+    status: 'dns',
+    pointsEarned: 0,
+    stagePoints: 0,
+    purseEarned: 0,
+    isPlayer: true,
+  }
 }
 
 /** Update owner standings — tracks by car number, not driver */
@@ -104,13 +143,13 @@ const RaceDay: React.FC = () => {
 
   // Readiness checks
   const hasDriver = !!saveData.hiredDriver
-  const matchingChassis = saveData.chassis.find(c => c.status === 'ready' && c.trackType === trackType)
+  const matchingChassis = saveData.chassis.find(c => c.trackType === trackType && isChassisRaceReady(c))
   const hasChassis = !!matchingChassis
-  const hasAnyChassis = saveData.chassis.some(c => c.status === 'ready')
+  const hasAnyChassis = saveData.chassis.some(c => isChassisRaceReady(c))
 
   // Check if all installed parts on the matching chassis are fully installed
   const hasUnfinishedParts = matchingChassis?.installedParts.some(
-    p => p.installDaysLeft !== undefined && p.installDaysLeft > 0
+    p => (p.installDaysLeft !== undefined && p.installDaysLeft > 0) || (p.uninstallDaysLeft !== undefined && p.uninstallDaysLeft > 0)
   ) ?? false
 
   const ready = hasDriver && hasChassis && !hasUnfinishedParts && isRaceDay
@@ -227,26 +266,31 @@ const RaceDay: React.FC = () => {
         )
       }
 
-      // Simulate race without player entry — create a modified save with no driver
-      const skippedSave = { ...freshSave, hiredDriver: undefined as any }
-      const result = simulateRace(skippedSave, race.track, race.round, race.laps, race.purse)
+      // Simulate AI race normally through the race engine without a player entry,
+      // then append an explicit player DNS result.
+      const result = simulateRace(freshSave, race.track, race.round, race.laps, race.purse, false)
 
-      // Player gets no results
-      setRaceResult(result.driverResults)
-      setPlayerResult(null)
+      const dnsResult = createPlayerDNSResult(freshSave, result.driverResults.length + 1)
+      const dnsRaceResult = {
+        ...result,
+        driverResults: [...result.driverResults, dnsResult],
+      }
+
+      setRaceResult(dnsRaceResult.driverResults)
+      setPlayerResult(dnsResult)
 
       if (!race.isExhibition) {
-        const newStandings = updateStandings(standings, result)
+        const newStandings = updateStandings(standings, dnsRaceResult)
         freshSave.standings = newStandings
 
         let ownerStandings = freshSave.ownerStandings ?? []
-        ownerStandings = updateOwnerStandings(ownerStandings, result, freshSave.carNumber || '1', freshSave.selectedTeam?.name ?? 'Player Team', freshSave.selectedTeam?.manufacturer ?? 'Chevrolet')
+        ownerStandings = updateOwnerStandings(ownerStandings, dnsRaceResult, freshSave.carNumber || '1', freshSave.selectedTeam?.name ?? 'Player Team', freshSave.selectedTeam?.manufacturer ?? 'Chevrolet')
         freshSave.ownerStandings = ownerStandings
       } else {
         freshSave.standings = standings
       }
 
-      freshSave.seasonResults = [...(freshSave.seasonResults ?? []), result]
+      freshSave.seasonResults = [...(freshSave.seasonResults ?? []), dnsRaceResult]
       freshSave.currentWeek = (freshSave.seasonResults.length) + 1
 
       // Advance date to day after race
@@ -312,10 +356,6 @@ const RaceDay: React.FC = () => {
             <span className={styles.statValue}>{trackInfo?.lengthMiles ?? '?'} mi</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statLabel}>Banking</span>
-            <span className={styles.statValue}>{trackInfo?.banking ?? '?'}</span>
-          </div>
-          <div className={styles.stat}>
             <span className={styles.statLabel}>Laps</span>
             <span className={styles.statValue}>{race.laps}</span>
           </div>
@@ -353,7 +393,7 @@ const RaceDay: React.FC = () => {
                     ? `${matchingChassis!.name} — Ready`
                     : hasAnyChassis
                       ? `No ${TRACK_TYPE_LABELS[trackType]} chassis — wrong track type`
-                      : 'No chassis ready'}
+                      : 'No race-ready chassis (complete build required)'}
                 </span>
               </div>
               {!hasChassis && <button className={styles.fixBtn} onClick={() => navigate('/game/store')}>Shop →</button>}
@@ -383,12 +423,12 @@ const RaceDay: React.FC = () => {
               </div>
             </div>
 
-            <div className={`${styles.checkItem} ${(saveData.hiredPitCrew?.length ?? 0) === 5 ? styles.checkGood : styles.checkWarn}`}>
-              <span className={styles.checkIcon}>{(saveData.hiredPitCrew?.length ?? 0) === 5 ? '✓' : '!'}</span>
+            <div className={`${styles.checkItem} ${(saveData.hiredPitCrew?.length ?? 0) === REQUIRED_PIT_CREW_MEMBERS ? styles.checkGood : styles.checkWarn}`}>
+              <span className={styles.checkIcon}>{(saveData.hiredPitCrew?.length ?? 0) === REQUIRED_PIT_CREW_MEMBERS ? '✓' : '!'}</span>
               <div className={styles.checkInfo}>
                 <span className={styles.checkTitle}>Pit Crew</span>
                 <span className={styles.checkDetail}>
-                  {(saveData.hiredPitCrew?.length ?? 0)}/5 members filled
+                  {(saveData.hiredPitCrew?.length ?? 0)}/{REQUIRED_PIT_CREW_MEMBERS} members filled
                 </span>
               </div>
             </div>
@@ -513,7 +553,7 @@ const RaceDay: React.FC = () => {
             <div className={`${styles.playerHighlight} ${playerResult.status !== 'running' ? styles.dnfHighlight : playerResult.finishPos <= 3 ? styles.podiumHighlight : ''}`}>
               <div className={styles.phPos}>
                 {playerResult.status !== 'running'
-                  ? 'DNF'
+                  ? playerResult.status === 'dns' ? 'DNS' : 'DNF'
                   : `P${playerResult.finishPos}`}
               </div>
               <div className={styles.phInfo}>
@@ -521,10 +561,11 @@ const RaceDay: React.FC = () => {
                 <span className={styles.phTeam}>{playerResult.teamName}</span>
                 {playerResult.status !== 'running' && (
                   <span className={styles.phDnf}>
-                    {playerResult.status === 'dnf_wreck' ? 'Wrecked' :
+                    {playerResult.status === 'dns' ? 'Did Not Start' :
+                     playerResult.status === 'dnf_wreck' ? 'Wrecked' :
                      playerResult.status === 'dnf_mechanical' ? 'Mechanical Failure' :
                      'Pit Road Error'}
-                    {' — Lap '}{playerResult.lapsCompleted}/{race.laps}
+                    {playerResult.status === 'dns' ? '' : ` — Lap ${playerResult.lapsCompleted}/${race.laps}`}
                   </span>
                 )}
               </div>
@@ -555,6 +596,7 @@ const RaceDay: React.FC = () => {
                 <span className={styles.rCol3}>{r.teamName}</span>
                 <span className={styles.rCol4}>
                   {r.status === 'running' ? `${r.lapsCompleted} laps` :
+                   r.status === 'dns' ? 'DNS' :
                    r.status === 'dnf_wreck' ? 'Wreck' :
                    r.status === 'dnf_mechanical' ? 'Mechanical' :
                    'Pit Error'}

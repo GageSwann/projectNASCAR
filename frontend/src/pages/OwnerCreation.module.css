@@ -125,7 +125,7 @@
 
 /* Form Cards — matches Settings card styling */
 .errorBanner {
-  max-width: 800px;
+  max-width: 1100px;
   margin: 0 auto clamp(1rem, 3vw, 1.5rem);
   padding: 0.9rem 1rem;
   border: 2px solid rgba(255, 85, 85, 0.35);
@@ -138,8 +138,6 @@
 }
 
 .formCard {
-  max-width: 800px;
-  margin: 0 auto clamp(1rem, 3vw, 1.5rem);
   background: var(--bg-secondary);
   border: 2px solid var(--text-primary);
   border-radius: var(--radius-lg);
@@ -154,16 +152,27 @@
   animation-delay: calc(var(--page-enter-step) * 2);
 }
 
-.formCard:nth-of-type(3) {
-  animation-delay: calc(var(--page-enter-step) * 3);
-}
-
-.formCard:nth-of-type(4) {
-  animation-delay: calc(var(--page-enter-step) * 4);
-}
-
 .formCard:hover {
   background: var(--bg-tertiary);
+}
+
+.formCardElevated {
+  z-index: 50;
+}
+
+.formGrid {
+  max-width: 1100px;
+  margin: 0 auto clamp(1rem, 3vw, 1.5rem);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(1rem, 3vw, 1.5rem);
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sectionTitle {
@@ -294,7 +303,7 @@
   background: var(--bg-primary);
   border: 2px solid var(--text-primary);
   border-radius: var(--radius-md);
-  z-index: 100;
+  z-index: 9999;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
@@ -352,13 +361,13 @@
 
 /* Continue Button — matches MainMenu button styling */
 .actions {
-  max-width: 800px;
+  max-width: 1100px;
   margin: clamp(0.5rem, 2vw, 1rem) auto 0;
   display: flex;
   justify-content: center;
   position: relative;
   z-index: 10;
-  animation: fadeUp var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 5) both;
+  animation: fadeUp var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 3) both;
 }
 
 .continueBtn {
@@ -558,12 +567,12 @@
 
 /* Footer */
 .footer {
-  max-width: 800px;
+  max-width: 1100px;
   margin: clamp(1.5rem, 5vw, 2rem) auto 0;
   text-align: center;
   position: relative;
   z-index: 10;
-  animation: fadeUp var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 6) both;
+  animation: fadeUp var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 4) both;
 }
 
 .version {

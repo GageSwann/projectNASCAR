@@ -5,18 +5,34 @@ import { GameContext, InventoryItem, ItemCategory } from '../../types'
 import { getActiveSlotId, loadSlot, saveSlot } from '../../services/saveManager'
 
 const CATEGORIES: { value: ItemCategory | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All Parts' },
   { value: 'engine', label: 'Engine' },
   { value: 'suspension', label: 'Suspension' },
-  { value: 'aerodynamics', label: 'Aero' },
+  { value: 'aerodynamics', label: 'Aerodynamics' },
   { value: 'brakes', label: 'Brakes' },
   { value: 'transmission', label: 'Transmission' },
 ]
 
-const TIER_LABELS: Record<number, string> = { 1: 'Stock', 2: 'Performance', 3: 'Racing', 4: 'Elite' }
+const TIER_LABELS: Record<number, string> = { 1: 'Stock', 2: 'Sport', 3: 'Competition', 4: 'Elite' }
 const TIER_COLORS: Record<number, string> = { 1: '#9e9e9e', 2: '#4caf50', 3: '#2196f3', 4: '#ff9800' }
 
 type SortBy = 'name' | 'category' | 'tier' | 'health' | 'value'
+
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: 'category', label: 'Category' },
+  { value: 'tier', label: 'Tier: Highest First' },
+  { value: 'health', label: 'Health: Lowest First' },
+  { value: 'value', label: 'Sell Value: Highest First' },
+  { value: 'name', label: 'Name: A to Z' },
+]
+
+const CATEGORY_LABELS: Record<ItemCategory, string> = {
+  engine: 'Engine',
+  suspension: 'Suspension',
+  aerodynamics: 'Aerodynamics',
+  brakes: 'Brakes',
+  transmission: 'Transmission',
+}
 
 function getSellPrice(item: InventoryItem): number {
   const base = item.item.price
@@ -42,6 +58,7 @@ const Inventory: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortBy>('category')
   const [money, setMoney] = useState(saveData.money)
   const [showInstalled, setShowInstalled] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   // Get all inventory items (uninstalled) + optionally installed parts from chassis
   const allItems: InventoryItem[] = (() => {
@@ -56,10 +73,17 @@ const Inventory: React.FC = () => {
     return [...loose, ...installed]
   })()
 
+  const searchValue = searchTerm.trim().toLowerCase()
+
   const filtered = allItems
     .filter(item => {
       if (category !== 'all' && item.item.category !== category) return false
       if (tierFilter > 0 && item.item.tier !== tierFilter) return false
+      if (
+        searchValue &&
+        !item.item.name.toLowerCase().includes(searchValue) &&
+        !CATEGORY_LABELS[item.item.category].toLowerCase().includes(searchValue)
+      ) return false
       return true
     })
     .sort((a, b) => {
@@ -88,6 +112,14 @@ const Inventory: React.FC = () => {
     refreshSave()
   }
 
+  const resetFilters = () => {
+    setCategory('all')
+    setTierFilter(0)
+    setSortBy('category')
+    setSearchTerm('')
+    setShowInstalled(false)
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
@@ -95,56 +127,94 @@ const Inventory: React.FC = () => {
         <span className={styles.balance}>Balance: {formatMoney(money)}</span>
       </div>
 
-      {/* Filters */}
-      <div className={styles.filters}>
-        <div className={styles.catRow}>
-          {CATEGORIES.map(c => (
-            <button
-              key={c.value}
-              className={`${styles.catBtn} ${category === c.value ? styles.catActive : ''}`}
-              onClick={() => setCategory(c.value)}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-        <div className={styles.tierRow}>
-          <button
-            className={`${styles.tierBtn} ${tierFilter === 0 ? styles.tierActive : ''}`}
-            onClick={() => setTierFilter(0)}
-          >
-            All Tiers
-          </button>
-          {[1, 2, 3, 4].map(t => (
-            <button
-              key={t}
-              className={`${styles.tierBtn} ${tierFilter === t ? styles.tierActive : ''}`}
-              style={tierFilter === t ? { borderColor: TIER_COLORS[t], color: TIER_COLORS[t] } : undefined}
-              onClick={() => setTierFilter(t)}
-            >
-              {TIER_LABELS[t]}
-            </button>
-          ))}
-        </div>
-        <div className={styles.controlRow}>
-          <div className={styles.sortGroup}>
-            <span className={styles.sortLabel}>Sort:</span>
-            {(['category', 'name', 'tier', 'health', 'value'] as SortBy[]).map(s => (
-              <button
-                key={s}
-                className={`${styles.sortBtn} ${sortBy === s ? styles.sortActive : ''}`}
-                onClick={() => setSortBy(s)}
-              >
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
+      <div className={styles.filterPanel}>
+        <div className={styles.filterHeader}>
+          <div>
+            <p className={styles.filterEyebrow}>Parts Storage</p>
+            <h2 className={styles.filterTitle}>Find the right part faster</h2>
           </div>
-          <button
-            className={`${styles.toggleBtn} ${showInstalled ? styles.toggleActive : ''}`}
-            onClick={() => setShowInstalled(!showInstalled)}
-          >
-            {showInstalled ? 'Hide Installed' : 'Show Installed'}
-          </button>
+          <button className={styles.resetBtn} onClick={resetFilters}>Reset Filters</button>
+        </div>
+
+        <div className={styles.utilityRow}>
+          <label className={styles.searchField}>
+            <span className={styles.controlLabel}>Search</span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search parts by name or category..."
+              className={styles.searchInput}
+            />
+          </label>
+
+          <label className={styles.selectField}>
+            <span className={styles.controlLabel}>Sort By</span>
+            <select
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value as SortBy)}
+              className={styles.selectInput}
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className={styles.filters}>
+          <div className={styles.filterGroup}>
+            <span className={styles.groupLabel}>Category</span>
+            <div className={styles.catRow}>
+              {CATEGORIES.map(c => (
+                <button
+                  key={c.value}
+                  className={`${styles.catBtn} ${category === c.value ? styles.catActive : ''}`}
+                  onClick={() => setCategory(c.value)}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <span className={styles.groupLabel}>Tier</span>
+            <div className={styles.tierRow}>
+              <button
+                className={`${styles.tierBtn} ${tierFilter === 0 ? styles.tierActive : ''}`}
+                onClick={() => setTierFilter(0)}
+              >
+                All Tiers
+              </button>
+              {[1, 2, 3, 4].map(t => (
+                <button
+                  key={t}
+                  className={`${styles.tierBtn} ${tierFilter === t ? styles.tierActive : ''}`}
+                  style={tierFilter === t ? { borderColor: TIER_COLORS[t], color: TIER_COLORS[t] } : undefined}
+                  onClick={() => setTierFilter(t)}
+                >
+                  {TIER_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.controlRow}>
+            <div className={styles.toggleCluster}>
+              <span className={styles.groupLabel}>Installed Parts</span>
+              <button
+                className={`${styles.toggleBtn} ${showInstalled ? styles.toggleActive : ''}`}
+                onClick={() => setShowInstalled(!showInstalled)}
+              >
+                {showInstalled ? 'Showing Installed Parts' : 'Installed Parts Hidden'}
+              </button>
+            </div>
+            <div className={styles.resultsBox}>
+              <span className={styles.resultsCount}>{filtered.length} items shown</span>
+              <span className={styles.resultsHint}>{showInstalled ? 'Installed parts are view-only.' : 'Only loose inventory can be sold.'}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -161,7 +231,7 @@ const Inventory: React.FC = () => {
                   {TIER_LABELS[item.item.tier]}
                 </span>
               </div>
-              <span className={styles.itemCat}>{item.item.category}</span>
+              <span className={styles.itemCat}>{CATEGORY_LABELS[item.item.category]}</span>
 
               {/* Health bar */}
               <div className={styles.healthRow}>

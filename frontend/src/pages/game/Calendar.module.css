@@ -28,6 +28,81 @@
   color: #ffd700;
 }
 
+.serviceNotice {
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid #4caf50;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem 0.85rem;
+}
+
+.serviceNoticeHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.serviceNoticeHead strong {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.serviceDismiss {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.serviceDismiss:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.serviceGroup {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.serviceGroup + .serviceGroup {
+  margin-top: 0.35rem;
+}
+
+.serviceLabel {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #4caf50;
+  border: 1px solid #4caf50;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.1rem 0.35rem;
+  flex-shrink: 0;
+}
+
+.uninstallLabel {
+  color: #f44336;
+  border-color: #f44336;
+}
+
+.serviceText {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 /* Advance time bar */
 .advanceBar {
   display: flex;
@@ -268,6 +343,19 @@
   border-radius: 50%;
 }
 
+.raceDots {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 10px;
+}
+
+.raceCount {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 /* Detail column */
 .detailCol {
   display: flex;
@@ -282,6 +370,27 @@
   border: 2px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
+}
+
+.raceGroupTitle {
+  font-size: 1.1rem;
+  margin: 0 0 0.9rem;
+  color: var(--text-primary);
+}
+
+.sameDayList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sameDayItem {
+  padding-top: 0.25rem;
+}
+
+.sameDayItem + .sameDayItem {
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
 }
 
 .raceDetailHeader {
