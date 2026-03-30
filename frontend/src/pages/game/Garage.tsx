@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom'
 import styles from './Garage.module.css'
 import { GameContext, Chassis, ChassisStatus, InventoryItem, ItemCategory, TrackType, INSTALL_DAYS_BY_TIER } from '../../types'
 import { getActiveSlotId, loadSlot, saveSlot } from '../../services/saveManager'
+import { computeCarRatings } from '../../data/carRatings'
 
 const STATUS_LABELS: Record<ChassisStatus, string> = {
   building: 'Building',
@@ -193,27 +194,7 @@ const Garage: React.FC = () => {
   }
 
   const computeStats = (c: Chassis) => {
-    let speed = c.base_speed
-    let handling = c.base_handling
-    let reliability = c.base_reliability
-    let aero = c.base_aero
-    let weight = c.weight_lbs
-    for (const p of c.installedParts) {
-      if (!isInstallComplete(p)) continue
-      // Scale bonuses by health
-      const hf = p.health / 100
-      speed += Math.round(p.item.speed_bonus * hf)
-      handling += Math.round(p.item.handling_bonus * hf)
-      reliability += Math.round(p.item.reliability_bonus * hf)
-      aero += Math.round(p.item.aero_bonus * hf)
-      weight -= p.item.weight_reduction
-    }
-    // Cap all stats at 99
-    speed = Math.min(speed, 99)
-    handling = Math.min(handling, 99)
-    reliability = Math.min(reliability, 99)
-    aero = Math.min(aero, 99)
-    return { speed, handling, reliability, aero, weight }
+    return computeCarRatings(c, false)
   }
 
   const isFullyEquipped = (c: Chassis) => missingCategories(c).length === 0

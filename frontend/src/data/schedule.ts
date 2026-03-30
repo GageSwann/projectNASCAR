@@ -69,6 +69,7 @@ export const SCHEDULES: Record<number, RaceInfo[]> = {
   3: [
     // Speedweeks / exhibition events — don't count for championship points
     { round: 0, name: 'The Clash at Bowman Gray', track: 'Bowman Gray Stadium', date: '2026-02-04', laps: 200, purse: 2000000, isExhibition: true },
+    { round: 0, name: 'Daytona 500 Qualifying', track: 'Daytona International Speedway', date: '2026-02-11', laps: 1, purse: 0, isExhibition: true },
     { round: 0, name: 'Duel 1 at Daytona', track: 'Daytona International Speedway', date: '2026-02-12', laps: 60, purse: 1500000, isExhibition: true },
     { round: 0, name: 'Duel 2 at Daytona', track: 'Daytona International Speedway', date: '2026-02-12', laps: 60, purse: 1500000, isExhibition: true },
     { round: 0, name: 'NASCAR All-Star Race', track: 'Dover Motor Speedway', date: '2026-05-17', laps: 350, purse: 1000000, isExhibition: true },

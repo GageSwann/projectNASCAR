@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import styles from './Calendar.module.css'
-import { GameContext, TrackType } from '../../types'
+import { GameContext, SeasonRaceResult, TrackType } from '../../types'
 import { SCHEDULES, RaceInfo, getScheduleForYear } from '../../data/schedule'
 import { getTrack } from '../../data/tracks'
 import { getActiveSlotId, loadSlot, saveSlot } from '../../services/saveManager'
@@ -66,6 +66,16 @@ function formatDateFull(dateStr: string) {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
 
+function eventKey(race: Pick<RaceInfo, 'date' | 'name' | 'track'>) {
+  return `${race.date}|${race.name}|${race.track}`
+}
+
+function getDuelNumber(race: Pick<RaceInfo, 'name'>): 1 | 2 | null {
+  if (race.name.startsWith('Duel 1')) return 1
+  if (race.name.startsWith('Duel 2')) return 2
+  return null
+}
+
 const Calendar: React.FC = () => {
   const { saveData, refreshSave } = useOutletContext<GameContext>()
   const navigate = useNavigate()
@@ -80,10 +90,39 @@ const Calendar: React.FC = () => {
   const [pendingSimDate, setPendingSimDate] = useState<string | null>(null)
   const [showSeasonOver, setShowSeasonOver] = useState(false)
   const [serviceNotice, setServiceNotice] = useState<ServiceNotice | null>(null)
+  const [selectedResult, setSelectedResult] = useState<{ race: RaceInfo; result: SeasonRaceResult } | null>(null)
 
   const scheduleByDate = useMemo(() => {
     return [...schedule].sort((a, b) => a.date.localeCompare(b.date))
   }, [schedule])
+
+  const completedRaceKeys = useMemo(() => {
+    const keys = new Set<string>()
+    const seasonResults = saveData.seasonResults ?? []
+    const consumed = new Set<number>()
+
+    for (const [idx, result] of seasonResults.entries()) {
+      if (result.raceDate && result.raceName && result.raceTrack) {
+        keys.add(`${result.raceDate}|${result.raceName}|${result.raceTrack}`)
+        consumed.add(idx)
+      }
+    }
+
+    const unresolvedCount = seasonResults.length - consumed.size
+    if (unresolvedCount > 0) {
+      const completedEvents = scheduleByDate.filter((race) => race.date <= currentDate)
+      let remaining = unresolvedCount
+      for (const race of completedEvents) {
+        const key = eventKey(race)
+        if (keys.has(key)) continue
+        keys.add(key)
+        remaining -= 1
+        if (remaining <= 0) break
+      }
+    }
+
+    return keys
+  }, [saveData.seasonResults, scheduleByDate, currentDate])
 
   // The season ends the day after the final championship race
   const seasonEndDate = useMemo(() => {
@@ -244,13 +283,43 @@ const Calendar: React.FC = () => {
 
   // Next upcoming race
   const nextRace = useMemo(() => {
-    const racedRounds = new Set((saveData.seasonResults ?? []).map(r => r.round))
-    return scheduleByDate.find(r => r.date >= currentDate && !racedRounds.has(r.round)) ?? null
-  }, [scheduleByDate, currentDate, saveData.seasonResults])
+    return scheduleByDate.find(r => r.date >= currentDate && !completedRaceKeys.has(eventKey(r))) ?? null
+  }, [scheduleByDate, currentDate, completedRaceKeys])
 
   // Check if today has a race
   const todayRaces = racesByDate.get(currentDate) ?? []
   const selectedRaces = selectedDate ? (racesByDate.get(selectedDate) ?? []) : []
+  const playerDuelAssignment = saveData.hiredDriver
+    ? (saveData.daytonaSpeedweeks?.qualifyingOrder.find((q) => q.driverId === saveData.hiredDriver!.id)?.duel ?? null)
+    : null
+
+  const resultsByEvent = useMemo(() => {
+    const map = new Map<string, SeasonRaceResult>()
+    const seasonResults = saveData.seasonResults ?? []
+    const consumed = new Set<number>()
+
+    // New saves store explicit race metadata for exact lookup.
+    seasonResults.forEach((result, idx) => {
+      if (result.raceDate && result.raceName && result.raceTrack) {
+        map.set(eventKey({ date: result.raceDate, name: result.raceName, track: result.raceTrack }), result)
+        consumed.add(idx)
+      }
+    })
+
+    // Fallback for legacy saves: pair remaining results to completed events by chronological order.
+    const unresolved = seasonResults.filter((_, idx) => !consumed.has(idx))
+    const completedEvents = scheduleByDate.filter((race) => race.date < currentDate || race.date === currentDate)
+    let pointer = 0
+    for (const race of completedEvents) {
+      const key = eventKey(race)
+      if (map.has(key)) continue
+      if (pointer >= unresolved.length) break
+      map.set(key, unresolved[pointer])
+      pointer += 1
+    }
+
+    return map
+  }, [saveData.seasonResults, scheduleByDate, currentDate])
 
   return (
     <div className={styles.page}>
@@ -319,7 +388,7 @@ const Calendar: React.FC = () => {
         ))}
         <span className={styles.legendItem}>
           <span className={styles.legendDot} style={{ background: 'var(--text-muted)', opacity: 0.4 }} />
-          Past
+          Complete
         </span>
       </div>
 
@@ -403,6 +472,9 @@ const Calendar: React.FC = () => {
                         ) : (
                           <span className={styles.roundBadge}>Round {race.round}</span>
                         )}
+                        {playerDuelAssignment && getDuelNumber(race) === playerDuelAssignment && (
+                          <span className={styles.roundBadge} style={{ borderColor: '#4caf50', color: '#4caf50' }}>Your Duel</span>
+                        )}
                         <span
                           className={styles.trackTypeBadge}
                           style={{ borderColor: TRACK_TYPE_COLORS[selectedTrackType], color: TRACK_TYPE_COLORS[selectedTrackType] }}
@@ -430,21 +502,29 @@ const Calendar: React.FC = () => {
                           </>
                         )}
                       </div>
+                      {race.date < currentDate && resultsByEvent.get(eventKey(race)) && (
+                        <button
+                          className={styles.resultsBtn}
+                          onClick={() => setSelectedResult({ race, result: resultsByEvent.get(eventKey(race))! })}
+                        >
+                          View Results
+                        </button>
+                      )}
                     </div>
                   )
                 })}
               </div>
-              <div className={styles.raceStatus}>
-                {selectedRaces[0].date < currentDate
-                  ? '✓ Past'
-                  : selectedRaces[0].date === currentDate
+              {selectedRaces[0].date >= currentDate && (
+                <div className={styles.raceStatus}>
+                  {selectedRaces[0].date === currentDate
                     ? '► Race Day!'
                     : (() => {
                         const diff = Math.ceil((new Date(selectedRaces[0].date + 'T12:00:00').getTime() - new Date(currentDate + 'T12:00:00').getTime()) / 86400000)
                         return `${diff} day${diff !== 1 ? 's' : ''} away`
                       })()
-                }
-              </div>
+                  }
+                </div>
+              )}
               {selectedRaces[0].date > currentDate && (
                 <button className={styles.simToRaceBtn} onClick={() => setPendingSimDate(selectedRaces[0].date)}>
                   Sim to Race Day
@@ -551,6 +631,49 @@ const Calendar: React.FC = () => {
             <div className={styles.confirmBtns}>
               <button className={styles.confirmCancel} onClick={() => setShowSeasonOver(false)}>Stay on Calendar</button>
               <button className={styles.confirmOk} onClick={() => { setShowSeasonOver(false); navigate('/game/offseason') }}>Go to Offseason →</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Past Event Results Popup */}
+      {selectedResult && (
+        <div className={styles.confirmOverlay} onClick={() => setSelectedResult(null)}>
+          <div className={styles.resultsModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.resultsModalHeader}>
+              <h3 className={styles.confirmTitle}>Race Results</h3>
+              <button className={styles.confirmCancel} onClick={() => setSelectedResult(null)}>Close</button>
+            </div>
+
+            <p className={styles.resultsRaceName}>{selectedResult.race.name}</p>
+            <p className={styles.resultsRaceMeta}>
+              {selectedResult.race.track} • {formatDateFull(selectedResult.race.date)}
+            </p>
+
+            <div className={styles.resultsTable}>
+              <div className={styles.resultsHeadRow}>
+                <span>Pos</span>
+                <span>Driver</span>
+                <span>Team</span>
+                <span>Status</span>
+                <span>Pts</span>
+                <span>Purse</span>
+              </div>
+              {selectedResult.result.driverResults.map((row) => (
+                <div key={`${row.driverId}-${row.finishPos}-${row.carNumber}`} className={styles.resultsDataRow}>
+                  <span>{row.finishPos}</span>
+                  <span>{row.driverName}</span>
+                  <span>{row.teamName}</span>
+                  <span>
+                    {row.status === 'running' ? 'Finished' :
+                     row.status === 'dns' ? 'DNS' :
+                     row.status === 'dnf_wreck' ? 'Wreck' :
+                     row.status === 'dnf_mechanical' ? 'Mechanical' : 'Pit Error'}
+                  </span>
+                  <span>{row.pointsEarned}</span>
+                  <span>{formatMoney(row.purseEarned)}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

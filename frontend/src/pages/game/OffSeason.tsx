@@ -154,6 +154,7 @@ const OffSeason: React.FC = () => {
     fresh.standings = []
     fresh.ownerStandings = []
     fresh.seasonPhase = 'preseason'
+    fresh.daytonaSpeedweeks = undefined
 
     // Set active schedule for the new season (using the already-incremented year)
     // Combine exhibition events + regular races into one ordered list

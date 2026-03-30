@@ -451,6 +451,45 @@
   color: var(--text-primary);
 }
 
+.upNextList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.upNextItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.upNextName {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.upNextDate {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.upNextExhibition {
+  font-style: normal;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #ff9800;
+  border: 1px solid #ff9800;
+  border-radius: var(--radius-sm);
+  padding: 0.05rem 0.3rem;
+}
+
 /* ---- Part Installation Notification ---- */
 .notifOverlay {
   position: fixed;
@@ -473,6 +512,109 @@
   max-width: 400px;
   width: 90%;
   text-align: center;
+}
+
+.prepModal {
+  background: var(--bg-secondary);
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.35rem;
+  max-width: 520px;
+  width: 92%;
+}
+
+.prepTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.prepRace {
+  margin: 0.35rem 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.prepList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.prepRow {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.prepRow span {
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.prepRow small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.prepGood {
+  border-color: #4caf50;
+}
+
+.prepBad {
+  border-color: #f44336;
+}
+
+.prepActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.prepCancel,
+.prepContinue {
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.prepCancel {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+.prepCancel:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.prepContinue {
+  background: transparent;
+  border: 2px solid var(--text-primary);
+  color: var(--text-primary);
+}
+
+.prepContinue:hover:not(:disabled) {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.prepContinue:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .notifTitle {

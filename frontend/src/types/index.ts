@@ -198,6 +198,8 @@ export interface SaveSlotData {
   // Championship purse earnings
   driverChampionshipEarnings: number;
   ownerChampionshipEarnings: number;
+  // Daytona Speedweeks state for Cup Series
+  daytonaSpeedweeks?: DaytonaSpeedweeksData;
 }
 
 export interface LocalCareerFile {
@@ -353,6 +355,35 @@ export const PIT_CREW_ROLE_LABELS: Record<PitCrewRole, string> = {
 export interface SeasonRaceResult {
   round: number;
   driverResults: DriverRaceResult[];
+  raceName?: string;
+  raceTrack?: string;
+  raceDate?: string;
+  isExhibition?: boolean;
+}
+
+export interface DaytonaQualifyingEntry {
+  driverId: number;
+  driverName: string;
+  carNumber: string;
+  teamName: string;
+  manufacturer: string;
+  isPlayer: boolean;
+  round1Time: number;
+  round2Time?: number;
+  rank: number;
+  duel: 1 | 2;
+}
+
+export interface DaytonaSpeedweeksData {
+  season: number;
+  qualifyingOrder: DaytonaQualifyingEntry[];
+  round2Order: DaytonaQualifyingEntry[];
+  frontRowDriverIds: number[];
+  duel1DriverIds: number[];
+  duel2DriverIds: number[];
+  duel1ResultDriverIds?: number[];
+  duel2ResultDriverIds?: number[];
+  daytona500LineupDriverIds?: number[];
 }
 
 export interface DriverRaceResult {

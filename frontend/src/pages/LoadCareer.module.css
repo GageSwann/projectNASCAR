@@ -122,41 +122,6 @@
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.35);
 }
 
-.importPanel {
-  max-width: 1100px;
-  margin: clamp(1rem, 3vw, 1.5rem) auto 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  background: var(--bg-secondary);
-  border: 2px solid var(--text-primary);
-  border-radius: var(--radius-lg);
-  padding: clamp(1rem, 3vw, 1.4rem);
-  position: relative;
-  z-index: 10;
-  animation: fadeUp var(--page-enter-duration) var(--page-enter-ease) calc(var(--page-enter-step) * 3) both;
-  transition: all var(--transition-base);
-}
-
-.importPanel:hover {
-  background: var(--bg-tertiary);
-}
-
-.importTitle {
-  margin: 0 0 0.4rem;
-  color: var(--text-primary);
-  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
-}
-
-.importText {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  line-height: 1.6;
-  max-width: 700px;
-}
-
 .fileInput {
   display: none;
 }
@@ -211,23 +176,26 @@
   white-space: nowrap;
 }
 
-.slotState {
-  border: 1px solid var(--text-primary);
-  border-radius: var(--radius-full);
-  padding: 0.22rem 0.6rem;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
+.slotInfo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.18rem;
+  min-width: 0;
 }
 
-.slotStatus {
+.slotName {
+  color: var(--text-primary);
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.slotTeam,
+.slotDate,
+.slotEmpty {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.92rem;
-  flex: 1;
 }
 
 .slotButton {
@@ -254,6 +222,10 @@
   margin-left: auto;
   display: flex;
   gap: 0.5rem;
+}
+
+.exportButton {
+  background: var(--bg-secondary);
 }
 
 .deleteButton {
@@ -301,7 +273,6 @@
 }
 
 .toMenu .header,
-.toMenu .importPanel,
 .toMenu .errorBanner,
 .toMenu .slotList,
 .toMenu .footer {
@@ -309,88 +280,77 @@
 }
 
 .toMenu .backBtn,
-.toMenu .primaryButton,
 .toMenu .slotButton,
 .toMenu .deleteButton {
   pointer-events: none;
 }
 
-.primaryButton,
-.secondaryButton {
-  min-width: 220px;
-  padding: 0.9rem 1.2rem;
-  border-radius: 8px;
-  font-size: 0.92rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+.confirmModal {
+  width: min(500px, 92vw);
+  background: var(--bg-secondary);
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  padding: 1.2rem;
+}
+
+.confirmTitle {
+  margin: 0 0 0.5rem;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.primaryButton {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 2px solid var(--text-primary);
-  position: relative;
-  overflow: hidden;
-  transition: color 0.6s ease;
+.confirmText {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.confirmActions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.confirmCancel,
+.confirmImport {
+  border-radius: 8px;
+  padding: 0.58rem 0.95rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.primaryButton::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
+.confirmCancel {
+  background: transparent;
+  border: 1px solid var(--text-primary);
+  color: var(--text-muted);
+}
+
+.confirmImport {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--text-primary);
+  color: var(--text-primary);
+}
+
+.confirmImport:hover {
   background: var(--text-primary);
-  transition: left 0.6s ease;
-  z-index: -1;
-}
-
-.primaryButton:hover::after {
-  left: 0;
-}
-
-.primaryButton:hover {
-  transform: translateY(-3px) skewX(-1deg);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   color: var(--bg-primary);
-}
-
-.primaryButton:active {
-  transform: scale(0.97) skewX(-0.5deg);
-}
-
-:global([data-theme="light"]) .primaryButton {
-  background: #f5f5f5;
-  color: #000000;
-  border-color: #000000;
-}
-
-:global([data-theme="light"]) .primaryButton::after {
-  background: #000000;
-}
-
-:global([data-theme="light"]) .primaryButton:hover {
-  background: #f5f5f5;
-  color: #ffffff;
-}
-
-:global([data-theme="dark"]) .primaryButton {
-  background: #0f0f0f;
-  color: #ffffff;
-  border-color: #ffffff;
-}
-
-:global([data-theme="dark"]) .primaryButton::after {
-  background: #ffffff;
-}
-
-:global([data-theme="dark"]) .primaryButton:hover {
-  background: #0f0f0f;
-  color: #000000;
 }
 
 @keyframes fadeUp {
@@ -447,12 +407,8 @@
     flex-wrap: wrap;
   }
 
-  .importPanel {
+  .confirmActions {
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .primaryButton {
-    width: 100%;
-  }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import styles from './Store.module.css'
 import { GameContext, StoreItem, ItemCategory, InventoryItem, Chassis, TrackType, INSTALL_DAYS_BY_TIER } from '../../types'
@@ -6,9 +6,9 @@ import { getActiveSlotId, loadSlot, saveSlot } from '../../services/saveManager'
 
 type StoreTab = 'parts' | 'chassis'
 type StoreSort = 'recommended' | 'price-low' | 'price-high' | 'tier-high' | 'name'
-type PendingPurchase =
-  | { kind: 'part'; item: StoreItem }
-  | { kind: 'chassis'; item: ChassisStoreItem }
+type CartItem =
+  | { kind: 'part'; item: StoreItem; quantity: number }
+  | { kind: 'chassis'; item: ChassisStoreItem; quantity: number }
 
 const CATEGORIES: { value: ItemCategory | 'all'; label: string }[] = [
   { value: 'all', label: 'All Parts' },
@@ -71,6 +71,7 @@ const TRACK_TYPE_LABELS: Record<TrackType, string> = {
   short_track: 'Short Track',
   intermediate: 'Intermediate',
   road_course: 'Road Course',
+  street: 'Street Course',
   dirt: 'Dirt',
 }
 
@@ -147,7 +148,7 @@ function compareStoreItems<T extends { name: string; tier: number; price: number
 
 const Store: React.FC = () => {
   const { saveData, refreshSave } = useOutletContext<GameContext>()
-  const [tab, setTab] = useState<StoreTab>('chassis')
+  const [tab, setTab] = useState<StoreTab | 'cart'>('chassis')
   const [category, setCategory] = useState<ItemCategory | 'all'>('all')
   const [tierFilter, setTierFilter] = useState<number>(0) // 0 = all
   const [trackTypeFilter, setTrackTypeFilter] = useState<TrackType | 'all'>('all')
@@ -155,7 +156,10 @@ const Store: React.FC = () => {
   const [chassisSort, setChassisSort] = useState<StoreSort>('recommended')
   const [searchTerm, setSearchTerm] = useState('')
   const [money, setMoney] = useState(saveData.money)
-  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(null)
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [editingCartKey, setEditingCartKey] = useState<string | null>(null)
+  const [editingCartValue, setEditingCartValue] = useState('')
 
   const searchValue = searchTerm.trim().toLowerCase()
 
@@ -198,86 +202,148 @@ const Store: React.FC = () => {
     setChassisSort('recommended')
   }
 
-  const executePartPurchase = (item: StoreItem) => {
+  const executeCheckout = () => {
+    if (cart.length === 0) return
+
+    const totalCost = cart.reduce((sum, line) => sum + line.item.price * line.quantity, 0)
     const slotId = getActiveSlotId()
     if (!slotId) return
     const data = loadSlot(slotId)
-    if (!data || data.money < item.price) return
+    if (!data || data.money < totalCost) return
 
-    const invItem: InventoryItem = {
-      id: `inv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      item,
-      health: 100,
-      purchased_at: new Date().toISOString(),
+    for (const line of cart) {
+      for (let i = 0; i < line.quantity; i++) {
+        if (line.kind === 'part') {
+          const invItem: InventoryItem = {
+            id: `inv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            item: line.item,
+            health: 100,
+            purchased_at: new Date().toISOString(),
+          }
+          data.inventory.push(invItem)
+        } else {
+          const chassis: Chassis = {
+            id: `ch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            name: line.item.name,
+            series_id: data.selectedSeries?.id ?? 3,
+            trackType: line.item.trackType,
+            status: 'building',
+            base_speed: line.item.base_speed,
+            base_handling: line.item.base_handling,
+            base_reliability: line.item.base_reliability,
+            base_aero: line.item.base_aero,
+            weight_lbs: line.item.weight_lbs,
+            build_progress: 100,
+            installedParts: [],
+            purchasePrice: line.item.price,
+            created_at: new Date().toISOString(),
+          }
+          data.chassis.push(chassis)
+        }
+      }
     }
 
-    data.money -= item.price
-    data.inventory.push(invItem)
+    data.money -= totalCost
     saveSlot(data)
     setMoney(data.money)
+    setCart([])
+    setCheckoutOpen(false)
     refreshSave()
   }
 
-  const executeChassisPurchase = (item: ChassisStoreItem) => {
-    const slotId = getActiveSlotId()
-    if (!slotId) return
-    const data = loadSlot(slotId)
-    if (!data || data.money < item.price) return
+  const addPartToCart = (item: StoreItem) => {
+    setCart((prev) => {
+      const existing = prev.find((line) => line.kind === 'part' && line.item.id === item.id)
+      if (!existing) {
+        return [...prev, { kind: 'part', item, quantity: 1 }]
+      }
+      return prev.map((line) =>
+        line.kind === 'part' && line.item.id === item.id
+          ? { ...line, quantity: line.quantity + 1 }
+          : line
+      )
+    })
+  }
 
-    const chassis: Chassis = {
-      id: `ch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      name: item.name,
-      series_id: data.selectedSeries?.id ?? 3,
-      trackType: item.trackType,
-      status: 'building',
-      base_speed: item.base_speed,
-      base_handling: item.base_handling,
-      base_reliability: item.base_reliability,
-      base_aero: item.base_aero,
-      weight_lbs: item.weight_lbs,
-      build_progress: 100,
-      installedParts: [],
-      purchasePrice: item.price,
-      created_at: new Date().toISOString(),
+  const addChassisToCart = (item: ChassisStoreItem) => {
+    setCart((prev) => {
+      const existing = prev.find((line) => line.kind === 'chassis' && line.item.id === item.id)
+      if (!existing) {
+        return [...prev, { kind: 'chassis', item, quantity: 1 }]
+      }
+      return prev.map((line) =>
+        line.kind === 'chassis' && line.item.id === item.id
+          ? { ...line, quantity: line.quantity + 1 }
+          : line
+      )
+    })
+  }
+
+  const updateCartQuantity = (kind: CartItem['kind'], id: number, delta: number) => {
+    setCart((prev) => {
+      return prev.map((line) => {
+        if (line.kind !== kind || line.item.id !== id) return line
+        return { ...line, quantity: Math.max(1, line.quantity + delta) }
+      })
+    })
+  }
+
+  const setCartQuantity = (kind: CartItem['kind'], id: number, quantity: number) => {
+    setCart((prev) => {
+      return prev
+        .map((line) => {
+          if (line.kind !== kind || line.item.id !== id) return line
+          return { ...line, quantity: Math.max(0, Math.floor(quantity)) }
+        })
+        .filter((line) => line.quantity > 0)
+    })
+  }
+
+  const removeFromCart = (kind: CartItem['kind'], id: number) => {
+    setCart((prev) => prev.filter((line) => !(line.kind === kind && line.item.id === id)))
+  }
+
+  const startEditQuantity = (kind: CartItem['kind'], id: number, currentQuantity: number) => {
+    setEditingCartKey(`${kind}-${id}`)
+    setEditingCartValue(String(currentQuantity))
+  }
+
+  const commitEditQuantity = (kind: CartItem['kind'], id: number) => {
+    const parsed = Number.parseInt(editingCartValue, 10)
+    if (Number.isNaN(parsed)) {
+      setEditingCartKey(null)
+      setEditingCartValue('')
+      return
     }
 
-    data.money -= item.price
-    data.chassis.push(chassis)
-    saveSlot(data)
-    setMoney(data.money)
-    refreshSave()
+    setCartQuantity(kind, id, parsed)
+    setEditingCartKey(null)
+    setEditingCartValue('')
   }
 
-  const requestPartPurchase = (item: StoreItem) => {
-    if (money < item.price) return
-    setPendingPurchase({ kind: 'part', item })
+  const cartItemCount = useMemo(() => cart.reduce((sum, line) => sum + line.quantity, 0), [cart])
+  const cartTotal = useMemo(() => cart.reduce((sum, line) => sum + line.item.price * line.quantity, 0), [cart])
+  const projectedBalance = Math.max(money - cartTotal, 0)
+  const canCheckout = cart.length > 0 && money >= cartTotal
+
+  const openCheckout = () => {
+    if (cart.length === 0) return
+    setCheckoutOpen(true)
   }
-
-  const requestChassisPurchase = (item: ChassisStoreItem) => {
-    if (money < item.price) return
-    setPendingPurchase({ kind: 'chassis', item })
-  }
-
-  const confirmPurchase = () => {
-    if (!pendingPurchase) return
-
-    if (pendingPurchase.kind === 'part') {
-      executePartPurchase(pendingPurchase.item)
-    } else {
-      executeChassisPurchase(pendingPurchase.item)
-    }
-
-    setPendingPurchase(null)
-  }
-
-  const pendingPrice = pendingPurchase?.item.price ?? 0
-  const projectedBalance = Math.max(money - pendingPrice, 0)
 
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
         <h1 className={styles.heading}>Store</h1>
-        <span className={styles.balance}>Balance: {formatMoney(money)}</span>
+        <div className={styles.topBarMeta}>
+          <span className={styles.balance}>Balance: {formatMoney(money)}</span>
+          <button className={styles.cartIconBtn} onClick={() => setTab('cart')} aria-label="Open shopping cart">
+            <svg viewBox="0 0 24 24" className={styles.cartIcon} aria-hidden="true">
+              <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.2 14h9.9c.8 0 1.5-.5 1.8-1.2l3-6.8c.3-.7-.2-1.5-1-1.5H6.2L5.3 2H2v2h2l3.6 8.6L6.2 15c-.4.7.1 1.5.9 1.5H20v-2H7.2z" fill="currentColor" />
+            </svg>
+            <span className={styles.cartBadge}>{cartItemCount}</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -286,7 +352,7 @@ const Store: React.FC = () => {
         <button className={`${styles.tabBtn} ${tab === 'parts' ? styles.tabActive : ''}`} onClick={() => setTab('parts')}>Parts</button>
       </div>
 
-      <div className={styles.filterPanel}>
+      {tab !== 'cart' && <div className={styles.filterPanel}>
         <div className={styles.filterHeader}>
           <div>
             <p className={styles.filterEyebrow}>{tab === 'parts' ? 'Parts Catalog' : 'Chassis Catalog'}</p>
@@ -405,7 +471,90 @@ const Store: React.FC = () => {
           <span className={styles.resultsCount}>{activeResults} {tab === 'parts' ? 'parts' : 'chassis'} shown</span>
           <span className={styles.resultsHint}>{tab === 'parts' ? 'Recommended sorts by best tier first, then lowest price.' : 'Recommended sorts by best tier first, then lowest price.'}</span>
         </div>
-      </div>
+      </div>}
+
+      {tab === 'cart' && (
+        <div className={styles.cartPage}>
+          <div className={styles.cartHeader}>
+            <h2 className={styles.cartTitle}>Shopping Cart</h2>
+            <button className={styles.clearCartBtn} onClick={() => setCart([])} disabled={cart.length === 0}>
+              Clear Cart
+            </button>
+          </div>
+          {cart.length === 0 ? (
+            <p className={styles.cartEmpty}>Your cart is empty.</p>
+          ) : (
+            <div className={styles.cartList}>
+              {cart.map((line) => (
+                <div key={`${line.kind}-${line.item.id}`} className={styles.cartLine}>
+                  {(() => {
+                    const isEditing = editingCartKey === `${line.kind}-${line.item.id}`
+                    const displayValue = isEditing ? editingCartValue : String(line.quantity)
+                    const inputSize = Math.max(2, displayValue.length)
+
+                    return (
+                      <>
+                  <div className={styles.cartLineInfo}>
+                    <span className={styles.cartLineName}>{line.item.name}</span>
+                    <span className={styles.cartLineMeta}>{line.kind === 'part' ? 'Part' : 'Chassis'} - {formatMoney(line.item.price)} each</span>
+                  </div>
+                  <div className={styles.cartLineActions}>
+                    <button
+                      className={styles.qtyBtn}
+                      onClick={() => updateCartQuantity(line.kind, line.item.id, -1)}
+                      disabled={line.quantity <= 1}
+                    >
+                      -
+                    </button>
+                    <input
+                      className={styles.qtyValue}
+                      value={displayValue}
+                      readOnly={!isEditing}
+                      size={inputSize}
+                      onDoubleClick={(event) => {
+                        startEditQuantity(line.kind, line.item.id, line.quantity)
+                        window.setTimeout(() => {
+                          event.currentTarget.focus()
+                          event.currentTarget.select()
+                        }, 0)
+                      }}
+                      onChange={(event) => setEditingCartValue(event.target.value.replace(/[^0-9]/g, ''))}
+                      onBlur={() => {
+                        if (isEditing) {
+                          commitEditQuantity(line.kind, line.item.id)
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (!isEditing) return
+                        if (event.key === 'Enter') {
+                          commitEditQuantity(line.kind, line.item.id)
+                        }
+                        if (event.key === 'Escape') {
+                          setEditingCartKey(null)
+                          setEditingCartValue('')
+                        }
+                      }}
+                      inputMode="numeric"
+                      aria-label={`Quantity for ${line.item.name}. Double click to edit.`}
+                    />
+                    <button className={styles.qtyBtn} onClick={() => updateCartQuantity(line.kind, line.item.id, 1)}>+</button>
+                    <button className={styles.removeBtn} onClick={() => removeFromCart(line.kind, line.item.id)}>Remove</button>
+                  </div>
+                      </>
+                    )
+                  })()}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className={styles.cartFooter}>
+            <span className={styles.cartTotal}>Total: {formatMoney(cartTotal)}</span>
+            <button className={styles.checkoutBtn} disabled={!canCheckout} onClick={openCheckout}>
+              Checkout
+            </button>
+          </div>
+        </div>
+      )}
 
       {tab === 'parts' && (
         <>
@@ -439,9 +588,9 @@ const Store: React.FC = () => {
                     <button
                       className={styles.buyBtn}
                       disabled={money < item.price}
-                      onClick={() => requestPartPurchase(item)}
+                      onClick={() => addPartToCart(item)}
                     >
-                      Buy
+                      Add to Cart
                     </button>
                   </div>
                 </div>
@@ -482,9 +631,9 @@ const Store: React.FC = () => {
                     <button
                       className={styles.buyBtn}
                       disabled={money < item.price}
-                      onClick={() => requestChassisPurchase(item)}
+                      onClick={() => addChassisToCart(item)}
                     >
-                      Buy
+                      Add to Cart
                     </button>
                   </div>
                 </div>
@@ -494,12 +643,12 @@ const Store: React.FC = () => {
         </>
       )}
 
-      {pendingPurchase && (
+      {checkoutOpen && (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Confirm purchase">
           <div className={styles.confirmModal}>
-            <h3 className={styles.modalTitle}>Confirm Purchase</h3>
+            <h3 className={styles.modalTitle}>Confirm Checkout</h3>
             <p className={styles.modalText}>
-              Are you sure you want to buy <strong>{pendingPurchase.item.name}</strong> for <strong>{formatMoney(pendingPurchase.item.price)}</strong>?
+              Are you sure you want to buy <strong>{cartItemCount}</strong> item{cartItemCount === 1 ? '' : 's'} for a total of <strong>{formatMoney(cartTotal)}</strong>?
             </p>
 
             <div className={styles.balancePreview}>
@@ -509,7 +658,7 @@ const Store: React.FC = () => {
               </div>
               <div className={styles.balanceLine}>
                 <span>Purchase Cost</span>
-                <span>-{formatMoney(pendingPurchase.item.price)}</span>
+                <span>-{formatMoney(cartTotal)}</span>
               </div>
               <div className={`${styles.balanceLine} ${styles.newBalance}`}>
                 <span>Balance After Purchase</span>
@@ -518,11 +667,11 @@ const Store: React.FC = () => {
             </div>
 
             <div className={styles.modalActions}>
-              <button className={styles.cancelBtn} onClick={() => setPendingPurchase(null)}>
+              <button className={styles.cancelBtn} onClick={() => setCheckoutOpen(false)}>
                 Cancel
               </button>
-              <button className={styles.confirmBtn} onClick={confirmPurchase}>
-                Confirm Buy
+              <button className={styles.confirmBtn} onClick={executeCheckout} disabled={!canCheckout}>
+                Confirm Checkout
               </button>
             </div>
           </div>

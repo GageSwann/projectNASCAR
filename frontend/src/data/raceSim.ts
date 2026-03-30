@@ -1,10 +1,11 @@
 import {
   SaveSlotData, Chassis, MarketDriver,
   TrackType, SeasonRaceResult, DriverRaceResult,
-  StandingsEntry,
+  StandingsEntry, DaytonaSpeedweeksData, DaytonaQualifyingEntry,
 } from '../types'
 import { getTrackType } from './tracks'
 import { generateAIField, AICarEntry, driverBaseStrength } from './aiTeams'
+import { computeCarRatings } from './carRatings'
 
 // 2026 NASCAR Points Format
 // Finish: 1st=40, 2nd=35, then 34,33,32,...1
@@ -50,21 +51,13 @@ function clamp(v: number, min: number, max: number) { return Math.max(min, Math.
 
 // ---- Compute car performance from chassis + parts ----
 function computeCarRating(chassis: Chassis | undefined) {
-  if (!chassis || chassis.status !== 'ready') return { speed: 30, handling: 30, reliability: 30, aero: 30 }
-  let speed = chassis.base_speed
-  let handling = chassis.base_handling
-  let reliability = chassis.base_reliability
-  let aero = chassis.base_aero
-  for (const p of chassis.installedParts) {
-    // Skip parts still being installed
-    if (p.installDaysLeft !== undefined && p.installDaysLeft > 0) continue
-    const hf = (p.health ?? 100) / 100
-    speed += Math.round(p.item.speed_bonus * hf)
-    handling += Math.round(p.item.handling_bonus * hf)
-    reliability += Math.round(p.item.reliability_bonus * hf)
-    aero += Math.round(p.item.aero_bonus * hf)
+  const car = computeCarRatings(chassis, true)
+  return {
+    speed: car.speed,
+    handling: car.handling,
+    reliability: car.reliability,
+    aero: car.aero,
   }
-  return { speed, handling, reliability, aero }
 }
 
 // ---- Compute per-driver race strength ----
@@ -79,6 +72,27 @@ interface EntrantStats {
   reliabilityChance: number
   wreckChance: number
   pitErrorChance: number
+}
+
+interface RaceSimOptions {
+  eligibleDriverIds?: number[]
+  startingOrderDriverIds?: number[]
+}
+
+interface QualifyingOptions {
+  eligibleDriverIds?: number[]
+  forcePlayerToBack?: boolean
+}
+
+export interface QualifyingResultEntry {
+  driverId: number
+  driverName: string
+  carNumber: string
+  teamName: string
+  manufacturer: string
+  isPlayer: boolean
+  lapTime: number
+  startPos: number
 }
 
 function getDriverTrackBonus(driver: MarketDriver, trackType: TrackType): number {
@@ -172,6 +186,90 @@ function computeAIStats(entry: AICarEntry, trackType: TrackType): EntrantStats {
   }
 }
 
+function buildEntrants(
+  save: SaveSlotData,
+  trackType: TrackType,
+  includePlayer: boolean,
+  r: () => number,
+  eligibleDriverIds?: number[],
+): (EntrantStats & { raceScore: number })[] {
+  const entrants: (EntrantStats & { raceScore: number })[] = []
+  const eligibleSet = eligibleDriverIds ? new Set(eligibleDriverIds) : null
+
+  if (includePlayer && save.hiredDriver) {
+    if (!eligibleSet || eligibleSet.has(save.hiredDriver.id)) {
+      const playerStats = computePlayerStats(save, trackType)
+      entrants.push({ ...playerStats, raceScore: 0 })
+    }
+  }
+
+  const seriesId = save.selectedSeries?.id ?? 3
+  const playerNumbers = new Set<string>()
+  if (save.carNumber) playerNumbers.add(save.carNumber)
+  const aiField = getAIField(seriesId, playerNumbers)
+  for (const entry of aiField) {
+    if (entry.teamName === save.selectedTeam?.name) continue
+    if (eligibleSet && !eligibleSet.has(entry.driver.id)) continue
+
+    const aiStats = computeAIStats(entry, trackType)
+    const variation = (r() - 0.5) * 6
+    entrants.push({
+      ...aiStats,
+      strength: clamp(aiStats.strength + variation, 20, 99),
+      raceScore: 0,
+    })
+  }
+
+  return entrants
+}
+
+export function simulateQualifyingSession(
+  save: SaveSlotData,
+  trackName: string,
+  round: number,
+  includePlayer: boolean = true,
+  options: QualifyingOptions = {},
+): { order: number[]; entries: QualifyingResultEntry[] } {
+  const seriesId = save.selectedSeries?.id ?? 3
+  const trackType = getTrackType(trackName)
+  const rng = makeRng(seriesId * 12000 + round * 211 + save.currentSeason * 41)
+  const r = () => rng()
+
+  const entrants = buildEntrants(save, trackType, includePlayer, r, options.eligibleDriverIds)
+
+  const timed = entrants.map((e) => {
+    const lapTime = 52 - (e.strength - 50) * 0.03 + (r() - 0.5) * 0.6
+    return {
+      ...e,
+      lapTime: Number(lapTime.toFixed(3)),
+    }
+  }).sort((a, b) => a.lapTime - b.lapTime)
+
+  if (options.forcePlayerToBack) {
+    const playerIndex = timed.findIndex((e) => e.isPlayer)
+    if (playerIndex >= 0) {
+      const [playerEntry] = timed.splice(playerIndex, 1)
+      timed.push(playerEntry)
+    }
+  }
+
+  const entries: QualifyingResultEntry[] = timed.map((e, index) => ({
+    driverId: e.driverId,
+    driverName: e.driverName,
+    carNumber: e.carNumber,
+    teamName: e.teamName,
+    manufacturer: e.manufacturer,
+    isPlayer: e.isPlayer,
+    lapTime: e.lapTime,
+    startPos: index + 1,
+  }))
+
+  return {
+    order: entries.map((e) => e.driverId),
+    entries,
+  }
+}
+
 // Module-level AI field cache (regenerated per series, persists across races in a session)
 let _cachedAIField: AICarEntry[] | null = null
 let _cachedSeriesId: number = -1
@@ -195,36 +293,14 @@ export function simulateRace(
   totalLaps: number,
   purse: number = 0,
   includePlayer: boolean = true,
+  options: RaceSimOptions = {},
 ): SeasonRaceResult {
   const seriesId = save.selectedSeries?.id ?? 3
   const trackType = getTrackType(trackName)
   const rng = makeRng(seriesId * 10000 + round * 137 + save.currentSeason * 31)
   const r = () => rng()
 
-  // Build entrant list
-  const entrants: (EntrantStats & { raceScore: number })[] = []
-
-  // Player entry
-  if (includePlayer && save.hiredDriver) {
-    const playerStats = computePlayerStats(save, trackType)
-    entrants.push({ ...playerStats, raceScore: 0 })
-  }
-
-  // AI entries — use the full AICarEntry system
-  const playerNumbers = new Set<string>()
-  if (save.carNumber) playerNumbers.add(save.carNumber)
-  const aiField = getAIField(seriesId, playerNumbers)
-  for (const entry of aiField) {
-    // Skip AI cars from the player's own team
-    if (entry.teamName === save.selectedTeam?.name) continue
-    const aiStats = computeAIStats(entry, trackType)
-    const variation = (r() - 0.5) * 6
-    entrants.push({
-      ...aiStats,
-      strength: clamp(aiStats.strength + variation, 20, 99),
-      raceScore: 0,
-    })
-  }
+  const entrants = buildEntrants(save, trackType, includePlayer, r, options.eligibleDriverIds)
 
   // Simulate race: compute race score for each entrant
   const results: DriverRaceResult[] = []
@@ -281,8 +357,22 @@ export function simulateRace(
   // Sort by race score (higher = better) to determine finish positions
   const sorted = [...entrants].sort((a, b) => b.raceScore - a.raceScore)
 
-  // Generate qualifying order (strength-based with variance)
-  const qualOrder = [...entrants].sort((a, b) => (b.strength + (r() - 0.5) * 15) - (a.strength + (r() - 0.5) * 15))
+  // Generate starting order.
+  let qualOrder: (EntrantStats & { raceScore: number })[]
+  if (options.startingOrderDriverIds && options.startingOrderDriverIds.length > 0) {
+    const startIdx = new Map<number, number>()
+    options.startingOrderDriverIds.forEach((driverId, index) => startIdx.set(driverId, index))
+    qualOrder = [...entrants].sort((a, b) => {
+      const aPos = startIdx.get(a.driverId)
+      const bPos = startIdx.get(b.driverId)
+      if (aPos !== undefined && bPos !== undefined) return aPos - bPos
+      if (aPos !== undefined) return -1
+      if (bPos !== undefined) return 1
+      return (b.strength + (r() - 0.5) * 15) - (a.strength + (r() - 0.5) * 15)
+    })
+  } else {
+    qualOrder = [...entrants].sort((a, b) => (b.strength + (r() - 0.5) * 15) - (a.strength + (r() - 0.5) * 15))
+  }
 
   for (let i = 0; i < sorted.length; i++) {
     const result = results.find(res => res.driverId === sorted[i].driverId)!
@@ -323,6 +413,105 @@ export function simulateRace(
   results.sort((a, b) => a.finishPos - b.finishPos)
 
   return { round, driverResults: results }
+}
+
+export function simulateDaytona500Qualifying(save: SaveSlotData): { speedweeks: DaytonaSpeedweeksData; result: SeasonRaceResult } {
+  const seriesId = save.selectedSeries?.id ?? 3
+  const rng = makeRng(seriesId * 11000 + (save.currentSeason ?? 2026) * 53)
+  const r = () => rng()
+
+  const entrants = buildEntrants(save, 'superspeedway', true, r)
+
+  const round1 = entrants.map((e) => {
+    const lapTime = 49.9 - (e.strength - 50) * 0.022 + (r() - 0.5) * 0.45
+    return {
+      driverId: e.driverId,
+      driverName: e.driverName,
+      carNumber: e.carNumber,
+      teamName: e.teamName,
+      manufacturer: e.manufacturer,
+      isPlayer: e.isPlayer,
+      round1Time: Number(lapTime.toFixed(3)),
+      rank: 0,
+      duel: 1 as 1 | 2,
+    }
+  }).sort((a, b) => a.round1Time - b.round1Time)
+
+  const top10 = round1.slice(0, 10).map((entry) => {
+    const lapTime = entry.round1Time - 0.08 + (r() - 0.5) * 0.24
+    return {
+      ...entry,
+      round2Time: Number(lapTime.toFixed(3)),
+    }
+  }).sort((a, b) => (a.round2Time ?? 999) - (b.round2Time ?? 999))
+
+  const round2Rank = new Map<number, number>()
+  top10.forEach((entry, index) => round2Rank.set(entry.driverId, index + 1))
+  round1.forEach((entry, index) => {
+    entry.rank = index + 1
+    entry.duel = (index % 2 === 0 ? 1 : 2)
+  })
+
+  const frontRowDriverIds = top10.slice(0, 2).map((e) => e.driverId)
+  const duel1DriverIds = round1.filter((e) => e.duel === 1).map((e) => e.driverId)
+  const duel2DriverIds = round1.filter((e) => e.duel === 2).map((e) => e.driverId)
+
+  const speedweeks: DaytonaSpeedweeksData = {
+    season: save.currentSeason ?? 2026,
+    qualifyingOrder: round1.map((entry) => ({
+      ...entry,
+      round2Time: top10.find((r2) => r2.driverId === entry.driverId)?.round2Time,
+      rank: round2Rank.has(entry.driverId) ? (round2Rank.get(entry.driverId) as number) : entry.rank,
+    } as DaytonaQualifyingEntry)),
+    round2Order: top10.map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+      duel: round1.find((r1) => r1.driverId === entry.driverId)?.duel ?? 1,
+    } as DaytonaQualifyingEntry)),
+    frontRowDriverIds,
+    duel1DriverIds,
+    duel2DriverIds,
+  }
+
+  const result: SeasonRaceResult = {
+    round: 0,
+    driverResults: round1.map((entry, index) => ({
+      driverId: entry.driverId,
+      driverName: entry.driverName,
+      carNumber: entry.carNumber,
+      teamName: entry.teamName,
+      manufacturer: entry.manufacturer,
+      startPos: index + 1,
+      finishPos: index + 1,
+      lapsCompleted: 1,
+      lapsLed: 0,
+      status: 'running',
+      pointsEarned: 0,
+      stagePoints: 0,
+      purseEarned: 0,
+      isPlayer: entry.isPlayer,
+    })),
+  }
+
+  return { speedweeks, result }
+}
+
+export function buildDaytona500Lineup(speedweeks: DaytonaSpeedweeksData): number[] {
+  const frontRow = speedweeks.frontRowDriverIds.slice(0, 2)
+  const duel1 = (speedweeks.duel1ResultDriverIds ?? speedweeks.duel1DriverIds).filter((id) => !frontRow.includes(id))
+  const duel2 = (speedweeks.duel2ResultDriverIds ?? speedweeks.duel2DriverIds).filter((id) => !frontRow.includes(id))
+
+  const lineup: number[] = []
+  if (frontRow[0] !== undefined) lineup.push(frontRow[0])
+  if (frontRow[1] !== undefined) lineup.push(frontRow[1])
+
+  const maxRows = Math.max(duel1.length, duel2.length)
+  for (let i = 0; i < maxRows; i++) {
+    if (duel1[i] !== undefined) lineup.push(duel1[i])
+    if (duel2[i] !== undefined) lineup.push(duel2[i])
+  }
+
+  return lineup
 }
 
 // ---- Update standings ----

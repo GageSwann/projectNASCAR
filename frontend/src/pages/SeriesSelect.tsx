@@ -91,7 +91,6 @@ const SeriesSelect: React.FC = () => {
             className={`${styles.seriesCard} ${styles[`series${series.id}`]} ${selected === series.id ? styles.selected : ''}`}
             onClick={() => setSelected(series.id)}
           >
-            {selected === series.id && <span className={styles.selectedIndicator}>✓</span>}
             <h2 className={styles.seriesName}>{series.name}</h2>
             <span className={styles.seriesRaces}>{series.num_races} Races</span>
             <p className={styles.seriesDesc}>{series.description}</p>
