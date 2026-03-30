@@ -49,6 +49,10 @@ function getHealthColor(health: number): string {
   return '#b71c1c'
 }
 
+function chassisVisibleForCar(chassis: Chassis, carNumber: string): boolean {
+  return !chassis.carNumber || chassis.carNumber === carNumber
+}
+
 const Garage: React.FC = () => {
   const { saveData, refreshSave } = useOutletContext<GameContext>()
   const [chassisList, setChassisList] = useState<Chassis[]>(saveData.chassis)
@@ -56,7 +60,35 @@ const Garage: React.FC = () => {
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [scrapConfirm, setScrapConfirm] = useState<Chassis | null>(null)
+  const [lockConfirm, setLockConfirm] = useState<{ chassis: Chassis; part: InventoryItem } | null>(null)
   const [listSort, setListSort] = useState<GarageSort>('status')
+  const carNumbers = useMemo(() => {
+    const entries = (saveData.carEntries ?? []).map((entry) => entry.carNumber).filter((num) => !!num)
+    if (entries.length > 0) return entries
+    return [saveData.carNumber || '1']
+  }, [saveData.carEntries, saveData.carNumber])
+
+  const getCarDisplayLabel = (carNumber: string): string => {
+    const entry = (saveData.carEntries ?? []).find((carEntry) => carEntry.carNumber === carNumber)
+    const lastName = entry?.driver?.lastName?.trim()
+    return lastName ? `#${carNumber} - ${lastName}` : `#${carNumber}`
+  }
+
+  const [selectedCarNumber, setSelectedCarNumber] = useState<string>(() => {
+    const current = saveData.carNumber || '1'
+    return carNumbers.includes(current) ? current : carNumbers[0]
+  })
+
+  const selectCarNumber = (carNumber: string) => {
+    setSelectedCarNumber(carNumber)
+    const slotId = getActiveSlotId()
+    if (!slotId) return
+    const data = loadSlot(slotId)
+    if (!data) return
+    data.carNumber = carNumber
+    saveSlot(data)
+    refreshSave()
+  }
 
   // Get installed categories for the selected chassis
   const installedCategories = (c: Chassis): Set<ItemCategory> => {
@@ -126,7 +158,7 @@ const Garage: React.FC = () => {
     return data.inventory.filter((i) => !i.chassisId)
   })()
 
-  const handleInstallPart = (chassis: Chassis, part: InventoryItem) => {
+  const installPartNow = (chassis: Chassis, part: InventoryItem) => {
     // Enforce 1 per category
     const installed = installedCategories(chassis)
     if (installed.has(part.item.category)) return
@@ -145,7 +177,12 @@ const Garage: React.FC = () => {
 
     const updatedChassis = chassisList.map((ch) => {
       if (ch.id !== chassis.id) return ch
-      return { ...ch, installedParts: [...ch.installedParts, installedPart], status: 'building' }
+      return {
+        ...ch,
+        carNumber: ch.carNumber || selectedCarNumber,
+        installedParts: [...ch.installedParts, installedPart],
+        status: 'building',
+      }
     })
 
     data.inventory = data.inventory.filter((i) => i.id !== part.id)
@@ -154,6 +191,14 @@ const Garage: React.FC = () => {
     setChassisList(updatedChassis)
     setSelected(updatedChassis.find((ch) => ch.id === chassis.id) ?? null)
     refreshSave()
+  }
+
+  const handleInstallPart = (chassis: Chassis, part: InventoryItem) => {
+    if (!chassis.carNumber) {
+      setLockConfirm({ chassis, part })
+      return
+    }
+    installPartNow(chassis, part)
   }
 
   const calculateResaleValue = (chassis: Chassis): number => {
@@ -210,7 +255,8 @@ const Garage: React.FC = () => {
       totaled: 3,
     }
 
-    const list = [...chassisList]
+    const visibleChassis = chassisList.filter((ch) => chassisVisibleForCar(ch, selectedCarNumber))
+    const list = [...visibleChassis]
     return list.sort((a, b) => {
       switch (listSort) {
         case 'name':
@@ -224,7 +270,13 @@ const Garage: React.FC = () => {
           return statusOrder[getDisplayStatus(a)] - statusOrder[getDisplayStatus(b)] || getBuildCompletion(b) - getBuildCompletion(a) || a.name.localeCompare(b.name)
       }
     })
-  }, [chassisList, listSort])
+  }, [chassisList, listSort, selectedCarNumber])
+
+  useEffect(() => {
+    if (!carNumbers.includes(selectedCarNumber)) {
+      setSelectedCarNumber(carNumbers[0])
+    }
+  }, [carNumbers, selectedCarNumber])
 
   useEffect(() => {
     if (chassisList.length === 0) {
@@ -238,7 +290,7 @@ const Garage: React.FC = () => {
     }
 
     const updated = chassisList.find(ch => ch.id === selected.id)
-    if (!updated) {
+    if (!updated || !chassisVisibleForCar(updated, selectedCarNumber)) {
       setSelected(sortedChassisList[0])
       return
     }
@@ -247,6 +299,16 @@ const Garage: React.FC = () => {
       setSelected(updated)
     }
   }, [chassisList, selected, sortedChassisList])
+
+  const selectedCarChassis = useMemo(
+    () => chassisList.filter((ch) => chassisVisibleForCar(ch, selectedCarNumber)),
+    [chassisList, selectedCarNumber],
+  )
+
+  const readyCountForCar = (carNumber: string) =>
+    chassisList.filter((ch) => chassisVisibleForCar(ch, carNumber) && getDisplayStatus(ch) === 'ready').length
+
+  const totalForCar = (carNumber: string) => chassisList.filter((ch) => chassisVisibleForCar(ch, carNumber)).length
 
   const handleRename = (chassis: Chassis) => {
     const trimmed = nameInput.trim()
@@ -274,14 +336,27 @@ const Garage: React.FC = () => {
     <div className={styles.page}>
       <div className={styles.topBar}>
         <h1 className={styles.heading}>Garage</h1>
-        <span className={styles.chassisCount}>{chassisList.length} chassis</span>
+        <span className={styles.chassisCount}>{selectedCarChassis.length} chassis on #{selectedCarNumber}</span>
+      </div>
+
+      <div className={styles.carSelector}>
+        {carNumbers.map((carNumber) => (
+          <button
+            key={`garage-car-${carNumber}`}
+            className={`${styles.carCard} ${selectedCarNumber === carNumber ? styles.carCardActive : ''}`}
+            onClick={() => selectCarNumber(carNumber)}
+          >
+            <span className={styles.carCardNumber}>{getCarDisplayLabel(carNumber)}</span>
+            <span className={styles.carCardMeta}>{readyCountForCar(carNumber)} ready / {totalForCar(carNumber)} total</span>
+          </button>
+        ))}
       </div>
 
       <div className={styles.content}>
         {/* Chassis list */}
         <div className={styles.listCol}>
           <div className={styles.listTools}>
-            <span className={styles.listCount}>{chassisList.length} total</span>
+            <span className={styles.listCount}>{selectedCarChassis.length} available</span>
             <label className={styles.sortField}>
               <span>Sort</span>
               <select
@@ -297,8 +372,8 @@ const Garage: React.FC = () => {
             </label>
           </div>
 
-          {chassisList.length === 0 ? (
-            <p className={styles.empty}>No chassis yet. Buy one from the Store!</p>
+          {selectedCarChassis.length === 0 ? (
+            <p className={styles.empty}>No chassis available for #{selectedCarNumber}. Buy one from the Store.</p>
           ) : (
             sortedChassisList.map((c) => (
               <button
@@ -317,6 +392,9 @@ const Garage: React.FC = () => {
                 </div>
                 <span className={styles.trackTypeTag}>{TRACK_TYPE_LABELS[c.trackType]}</span>
                 <div className={styles.cardMeta}>
+                  <span className={c.carNumber ? styles.lockedTag : styles.sharedTag}>
+                    {c.carNumber ? `Locked to #${c.carNumber}` : 'Shared'}
+                  </span>
                   <span>{getActiveCount(c)}/5 active</span>
                   {getInstallingCount(c) > 0 && <span className={styles.installingMeta}>{getInstallingCount(c)} installing</span>}
                   {isFullyEquipped(c) && <span className={styles.fullBadge}>Full Build</span>}
@@ -363,6 +441,9 @@ const Garage: React.FC = () => {
                       {STATUS_LABELS[getDisplayStatus(selected)]}
                     </span>
                     <span className={styles.detailTrackType}>{TRACK_TYPE_LABELS[selected.trackType]}</span>
+                    <span className={selected.carNumber ? styles.lockedTag : styles.sharedTag}>
+                      {selected.carNumber ? `Locked to #${selected.carNumber}` : 'Shared'}
+                    </span>
                   </div>
                 </div>
                 <button className={styles.deleteBtn} onClick={() => setScrapConfirm(selected)}>
@@ -515,6 +596,31 @@ const Garage: React.FC = () => {
             <div className={styles.scrapBtns}>
               <button className={styles.scrapCancel} onClick={() => setScrapConfirm(null)}>Keep Chassis</button>
               <button className={styles.scrapConfirm} onClick={() => handleDeleteChassis(scrapConfirm)}>Scrap It</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lock Confirmation Dialog */}
+      {lockConfirm && (
+        <div className={styles.scrapOverlay} onClick={() => setLockConfirm(null)}>
+          <div className={styles.lockModal} onClick={e => e.stopPropagation()}>
+            <h3 className={styles.lockTitle}>Lock Chassis To Car?</h3>
+            <p className={styles.lockText}>
+              Installing <strong>{lockConfirm.part.item.name}</strong> on <strong>{lockConfirm.chassis.name}</strong> will lock this chassis to <strong>#{selectedCarNumber}</strong>.
+            </p>
+            <p className={styles.lockText}>This chassis will no longer appear as shared in other car garages.</p>
+            <div className={styles.scrapBtns}>
+              <button className={styles.scrapCancel} onClick={() => setLockConfirm(null)}>Cancel</button>
+              <button
+                className={styles.lockConfirm}
+                onClick={() => {
+                  installPartNow(lockConfirm.chassis, lockConfirm.part)
+                  setLockConfirm(null)
+                }}
+              >
+                Install And Lock
+              </button>
             </div>
           </div>
         </div>

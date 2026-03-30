@@ -37,13 +37,44 @@ const Drivers: React.FC = () => {
   const [hiredDrivers, setHiredDrivers] = useState<MarketDriver[]>(saveData.hiredDrivers ?? (saveData.hiredDriver ? [saveData.hiredDriver] : []))
   const [money, setMoney] = useState(saveData.money)
   const [filter, setFilter] = useState<'all' | 'affordable'>('all')
+  const [pendingHireDriver, setPendingHireDriver] = useState<MarketDriver | null>(null)
+  const [pendingHireCarNumber, setPendingHireCarNumber] = useState<string>('')
+
+  const carNumbers = useMemo(() => {
+    const fromEntries = (saveData.carEntries ?? []).map((entry) => entry.carNumber).filter((num) => !!num)
+    return fromEntries.length > 0 ? fromEntries : [saveData.carNumber || '1']
+  }, [saveData.carEntries, saveData.carNumber])
+
+  const assignedCarByDriverId = useMemo(() => {
+    const assigned = new Map<number, string>()
+    for (const entry of saveData.carEntries ?? []) {
+      if (entry.driverId !== undefined) assigned.set(entry.driverId, entry.carNumber)
+    }
+    return assigned
+  }, [saveData.carEntries])
+
+  const openCarNumbers = useMemo(() => {
+    const taken = new Set<number>((saveData.carEntries ?? []).map((entry) => entry.driverId).filter((id): id is number => id !== undefined))
+    return carNumbers.filter((num) => {
+      const entry = (saveData.carEntries ?? []).find((carEntry) => carEntry.carNumber === num)
+      return !!entry && (entry.driverId === undefined || (selected ? entry.driverId === selected.id : false)) && !taken.has(entry.driverId ?? -1)
+    })
+  }, [carNumbers, saveData.carEntries, selected])
+
+  React.useEffect(() => {
+    if (!pendingHireDriver) return
+    if (pendingHireCarNumber && openCarNumbers.includes(pendingHireCarNumber)) return
+    setPendingHireCarNumber(openCarNumbers[0] ?? '')
+  }, [pendingHireDriver, pendingHireCarNumber, openCarNumbers])
 
   const filtered = filter === 'affordable'
     ? market.filter(d => d.salary <= money)
     : market
 
-  const handleHire = (driver: MarketDriver) => {
+  const handleHire = (driver: MarketDriver, carNumber: string) => {
     if (hiredDrivers.length >= MAX_DRIVERS) return
+    if (!carNumber) return
+
     const slotId = getActiveSlotId()
     if (!slotId) return
     const data = loadSlot(slotId)
@@ -52,13 +83,21 @@ const Drivers: React.FC = () => {
     const drivers = data.hiredDrivers ?? []
     // Don't hire duplicates
     if (drivers.some(d => d.id === driver.id)) return
+
+    const carEntry = (data.carEntries ?? []).find((entry) => entry.carNumber === carNumber)
+    if (!carEntry || carEntry.driverId !== undefined) return
+
     drivers.push(driver)
     data.hiredDrivers = drivers
+    carEntry.driverId = driver.id
+    carEntry.driver = driver
     // Keep legacy field in sync with first driver
-    data.hiredDriver = drivers[0]
+    data.hiredDriver = data.carEntries.find((entry) => entry.carNumber === data.carNumber)?.driver ?? drivers[0]
     saveSlot(data)
     setHiredDrivers([...drivers])
     setSelected(driver)
+    setPendingHireDriver(null)
+    setPendingHireCarNumber('')
     refreshSave()
   }
 
@@ -70,7 +109,11 @@ const Drivers: React.FC = () => {
 
     const drivers = (data.hiredDrivers ?? []).filter(d => d.id !== driverId)
     data.hiredDrivers = drivers
-    data.hiredDriver = drivers[0] ?? undefined
+    data.carEntries = (data.carEntries ?? []).map((entry) => {
+      if (entry.driverId !== driverId) return entry
+      return { ...entry, driverId: undefined, driver: undefined }
+    })
+    data.hiredDriver = data.carEntries.find((entry) => entry.carNumber === data.carNumber)?.driver ?? drivers[0] ?? undefined
     saveSlot(data)
     setHiredDrivers([...drivers])
     if (selected?.id === driverId) setSelected(null)
@@ -101,6 +144,7 @@ const Drivers: React.FC = () => {
             {hiredDrivers.map(d => (
               <div key={d.id} className={styles.hiredDriverRow}>
                 <span className={styles.currentName}>{d.firstName} {d.lastName}</span>
+                <span className={styles.currentCar}>#{assignedCarByDriverId.get(d.id) ?? '-'}</span>
                 <span className={styles.currentSalary}>{formatMoney(d.salary)}/season</span>
                 <button className={styles.releaseBtn} onClick={() => handleRelease(d.id)}>Release</button>
               </div>
@@ -183,15 +227,27 @@ const Drivers: React.FC = () => {
               </div>
 
               {!hiredDrivers.some(d => d.id === selected.id) && hiredDrivers.length < MAX_DRIVERS && (
-                <button className={styles.hireBtn} onClick={() => handleHire(selected)}>
-                  Sign {selected.firstName} {selected.lastName}
-                </button>
+                <>
+                  <button
+                    className={styles.hireBtn}
+                    onClick={() => {
+                      setPendingHireDriver(selected)
+                      setPendingHireCarNumber(openCarNumbers[0] ?? '')
+                    }}
+                    disabled={openCarNumbers.length === 0}
+                  >
+                    Sign {selected.firstName} {selected.lastName}
+                  </button>
+                  {openCarNumbers.length === 0 && (
+                    <div className={styles.signedBadge} style={{ color: '#ff9800' }}>No Open Car Slots</div>
+                  )}
+                </>
               )}
               {!hiredDrivers.some(d => d.id === selected.id) && hiredDrivers.length >= MAX_DRIVERS && (
                 <div className={styles.signedBadge} style={{ color: '#ff9800' }}>Roster Full (4/4)</div>
               )}
               {hiredDrivers.some(d => d.id === selected.id) && (
-                <div className={styles.signedBadge}>&#10003; Currently Signed</div>
+                <div className={styles.signedBadge}>&#10003; Signed To #{assignedCarByDriverId.get(selected.id) ?? '-'}</div>
               )}
             </>
           ) : (
@@ -199,6 +255,40 @@ const Drivers: React.FC = () => {
           )}
         </div>
       </div>
+
+      {pendingHireDriver && (
+        <div className={styles.modalOverlay} onClick={() => setPendingHireDriver(null)}>
+          <div className={styles.hireModal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Assign Driver To Car</h3>
+            <p className={styles.modalText}>
+              Select which car number <strong>{pendingHireDriver.firstName} {pendingHireDriver.lastName}</strong> will drive.
+            </p>
+            <div className={styles.modalRow}>
+              <label className={styles.modalLabel} htmlFor="hire-car-number">Car Number</label>
+              <select
+                id="hire-car-number"
+                className={styles.modalSelect}
+                value={pendingHireCarNumber}
+                onChange={(e) => setPendingHireCarNumber(e.target.value)}
+              >
+                {openCarNumbers.map((carNumber) => (
+                  <option key={`modal-assign-${carNumber}`} value={carNumber}>#{carNumber}</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.releaseBtn} onClick={() => setPendingHireDriver(null)}>Cancel</button>
+              <button
+                className={styles.hireBtn}
+                onClick={() => handleHire(pendingHireDriver, pendingHireCarNumber)}
+                disabled={!pendingHireCarNumber}
+              >
+                Confirm Assignment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

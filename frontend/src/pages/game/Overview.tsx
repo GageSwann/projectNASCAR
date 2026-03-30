@@ -13,6 +13,7 @@ type ServiceNotice = {
 }
 
 const REQUIRED_PART_CATEGORIES = ['engine', 'suspension', 'aerodynamics', 'brakes', 'transmission'] as const
+const REQUIRED_PIT_CREW_ROLES = ['tire_changer_front', 'tire_changer_rear', 'tire_carrier_front', 'tire_carrier_rear', 'jackman', 'gas_man'] as const
 
 function isPartReadyForBuild(part: { item: { category: string }; installDaysLeft?: number; uninstallDaysLeft?: number }) {
   const installDone = part.installDaysLeft === undefined || part.installDaysLeft <= 0
@@ -36,6 +37,10 @@ function formatDateLong(dateStr: string) {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
 
+function formatRate(value: number): string {
+  return `${value.toFixed(1)}%`
+}
+
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + 'T12:00:00')
   d.setDate(d.getDate() + days)
@@ -50,6 +55,11 @@ function getDuelNumber(race: { name: string }): 1 | 2 | null {
   if (race.name.startsWith('Duel 1')) return 1
   if (race.name.startsWith('Duel 2')) return 2
   return null
+}
+
+function formatTrackWithLocation(trackName: string): string {
+  const track = getTrack(trackName)
+  return track?.location ? `${trackName} • ${track.location}` : trackName
 }
 
 const Overview: React.FC = () => {
@@ -138,6 +148,7 @@ const Overview: React.FC = () => {
   const upcomingRaces = useMemo(() => {
     return scheduleByDate
       .filter((race) => race.date >= currentDate && !completedRaceKeys.has(raceEventKey(race)))
+      .filter((race) => race.name !== 'Daytona 500 Qualifying')
       .slice(0, 5)
   }, [scheduleByDate, currentDate, completedRaceKeys])
 
@@ -176,6 +187,9 @@ const Overview: React.FC = () => {
   const orgStats: OrgStats = saveData.orgStats ?? {
     championshipWins: 0, raceWins: 0, top5s: 0, top10s: 0, poles: 0, races: 0, dnfs: 0,
   }
+  const orgWinRate = orgStats.races > 0 ? (orgStats.raceWins / orgStats.races) * 100 : 0
+  const orgTop10Rate = orgStats.races > 0 ? (orgStats.top10s / orgStats.races) * 100 : 0
+  const orgDnfRate = orgStats.races > 0 ? (orgStats.dnfs / orgStats.races) * 100 : 0
 
   // Sim menu
   const [simOpen, setSimOpen] = useState(false)
@@ -185,8 +199,13 @@ const Overview: React.FC = () => {
 
   const trackType = todayRace ? (getTrack(todayRace.track)?.type ?? 'intermediate') : null
   const hasDriver = !!saveData.hiredDriver
+  const hasCrewChief = !!saveData.hiredCrewChief
+  const hasSpotter = !!saveData.hiredSpotter
+  const pitCrewRolesFilled = new Set((saveData.hiredPitCrew ?? []).map((member) => member.role))
+  const hasFullPitCrew = REQUIRED_PIT_CREW_ROLES.every((role) => pitCrewRolesFilled.has(role))
   const raceReadyChassis = trackType
     ? saveData.chassis.find((ch) =>
+      ch.carNumber === (saveData.carNumber || '1') &&
       ch.trackType === trackType &&
       ch.status === 'ready' &&
       REQUIRED_PART_CATEGORIES.every((category) =>
@@ -194,12 +213,12 @@ const Overview: React.FC = () => {
       )
     )
     : null
-  const hasChassis = !!raceReadyChassis
-  const hasAnyReadyChassis = saveData.chassis.some((ch) => ch.status === 'ready')
+  const hasAnyReadyChassis = saveData.chassis.some((ch) => ch.carNumber === (saveData.carNumber || '1') && ch.status === 'ready')
   const hasUnfinishedParts = !!raceReadyChassis?.installedParts.some(
     (part) => (part.installDaysLeft !== undefined && part.installDaysLeft > 0) || (part.uninstallDaysLeft !== undefined && part.uninstallDaysLeft > 0)
   )
-  const prepReady = !!todayRace && hasDriver && hasChassis && !hasUnfinishedParts
+  const hasRaceReadySetup = !!raceReadyChassis && !hasUnfinishedParts
+  const prepReady = !!todayRace && hasRaceReadySetup && hasDriver && hasCrewChief && hasSpotter && hasFullPitCrew
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -357,9 +376,10 @@ const Overview: React.FC = () => {
               {todayRace.isExhibition ? 'Speedweeks' : `Round ${todayRace.round} of ${pointsRaces.length}`}
             </span>
             <h2 className={styles.nrName}>{todayRace.name}</h2>
-            <span className={styles.nrTrack}>{todayRace.track}</span>
+            <span className={styles.nrTrack}>{formatTrackWithLocation(todayRace.track)}</span>
             <div className={styles.nrMeta}>
               <span>{formatDate(todayRace.date)}</span>
+              <span className={styles.nrSep} aria-hidden="true">&bull;</span>
               <span>{todayRace.laps} Laps</span>
             </div>
           </div>
@@ -374,11 +394,17 @@ const Overview: React.FC = () => {
               {nextRace.isExhibition ? 'Speedweeks' : `Round ${nextRace.round} of ${pointsRaces.length}`}
             </span>
             <h2 className={styles.nrName}>{nextRace.name}</h2>
-            <span className={styles.nrTrack}>{nextRace.track}</span>
+            <span className={styles.nrTrack}>{formatTrackWithLocation(nextRace.track)}</span>
             <div className={styles.nrMeta}>
               <span>{formatDate(nextRace.date)}</span>
+              <span className={styles.nrSep} aria-hidden="true">&bull;</span>
               <span>{nextRace.laps} Laps</span>
-              {daysUntilNext !== null && <span>{daysUntilNext} day{daysUntilNext !== 1 ? 's' : ''} away</span>}
+              {daysUntilNext !== null && (
+                <>
+                  <span className={styles.nrSep} aria-hidden="true">&bull;</span>
+                  <span>{daysUntilNext} day{daysUntilNext !== 1 ? 's' : ''} away</span>
+                </>
+              )}
             </div>
           </div>
           <button className={styles.nrBtn} onClick={() => navigate('/game/calendar')}>View Calendar</button>
@@ -468,6 +494,20 @@ const Overview: React.FC = () => {
               <span>DNFs</span><strong>{orgStats.dnfs}</strong>
             </div>
           </div>
+          <div className={styles.statsHighlights}>
+            <div className={styles.statsHighlight}>
+              <span className={styles.statsHighlightLabel}>Win Rate</span>
+              <strong className={styles.statsHighlightValue}>{formatRate(orgWinRate)}</strong>
+            </div>
+            <div className={styles.statsHighlight}>
+              <span className={styles.statsHighlightLabel}>Top 10 Rate</span>
+              <strong className={styles.statsHighlightValue}>{formatRate(orgTop10Rate)}</strong>
+            </div>
+            <div className={styles.statsHighlight}>
+              <span className={styles.statsHighlightLabel}>DNF Rate</span>
+              <strong className={styles.statsHighlightValue}>{formatRate(orgDnfRate)}</strong>
+            </div>
+          </div>
         </div>
 
         {/* Season Progress tile */}
@@ -491,10 +531,10 @@ const Overview: React.FC = () => {
               <div className={styles.upNextList}>
                 {upcomingRaces.map((race) => (
                   <div key={`${race.date}-${race.name}`} className={styles.upNextItem}>
-                    <span className={styles.upNextName}>
-                      {race.name}
-                      {race.isExhibition && <em className={styles.upNextExhibition}>Exhibition</em>}
-                    </span>
+                    <div className={styles.upNextMain}>
+                      <span className={styles.upNextName}>{race.name}</span>
+                      <span className={styles.upNextLocation}>{getTrack(race.track)?.location ?? race.track}</span>
+                    </div>
                     <span className={styles.upNextDate}>{formatDate(race.date)}</span>
                   </div>
                 ))}
@@ -512,40 +552,67 @@ const Overview: React.FC = () => {
             <p className={styles.prepRace}>{todayRace.name} • {todayRace.track}</p>
 
             <div className={styles.prepList}>
+              <div className={`${styles.prepRow} ${hasRaceReadySetup ? styles.prepGood : styles.prepBad}`}>
+                <span>{hasRaceReadySetup ? '✓' : '✗'} Race Chassis Ready</span>
+                <small>
+                  {hasRaceReadySetup
+                    ? `${raceReadyChassis?.name} is ready`
+                    : hasAnyReadyChassis
+                      ? `A chassis on #${saveData.carNumber || '1'} is ready, but not for this track type`
+                      : `Build and equip a chassis on #${saveData.carNumber || '1'} first`}
+                </small>
+              </div>
+
               <div className={`${styles.prepRow} ${hasDriver ? styles.prepGood : styles.prepBad}`}>
                 <span>{hasDriver ? '✓' : '✗'} Driver Hired</span>
                 <small>{hasDriver ? `${saveData.hiredDriver?.firstName} ${saveData.hiredDriver?.lastName}` : 'Hire a driver before race day'}</small>
               </div>
 
-              <div className={`${styles.prepRow} ${hasChassis ? styles.prepGood : styles.prepBad}`}>
-                <span>{hasChassis ? '✓' : '✗'} Track-Matched Race Chassis</span>
+              <div className={`${styles.prepRow} ${hasCrewChief ? styles.prepGood : styles.prepBad}`}>
+                <span>{hasCrewChief ? '✓' : '✗'} Crew Chief Assigned</span>
                 <small>
-                  {hasChassis
-                    ? `${raceReadyChassis?.name} is ready`
-                    : hasAnyReadyChassis
-                      ? 'No ready chassis for this track type'
-                      : 'Build and equip a chassis first'}
+                  {hasCrewChief
+                    ? `${saveData.hiredCrewChief?.firstName} ${saveData.hiredCrewChief?.lastName}`
+                    : 'Hire a crew chief before race day'}
                 </small>
               </div>
 
-              <div className={`${styles.prepRow} ${!hasUnfinishedParts ? styles.prepGood : styles.prepBad}`}>
-                <span>{!hasUnfinishedParts ? '✓' : '✗'} No Pending Part Service</span>
-                <small>{!hasUnfinishedParts ? 'All race parts are ready' : 'Advance time until installs/uninstalls complete'}</small>
+              <div className={`${styles.prepRow} ${hasSpotter ? styles.prepGood : styles.prepBad}`}>
+                <span>{hasSpotter ? '✓' : '✗'} Spotter Assigned</span>
+                <small>
+                  {hasSpotter
+                    ? `${saveData.hiredSpotter?.firstName} ${saveData.hiredSpotter?.lastName}`
+                    : 'Hire a spotter before race day'}
+                </small>
+              </div>
+
+              <div className={`${styles.prepRow} ${hasFullPitCrew ? styles.prepGood : styles.prepBad}`}>
+                <span>{hasFullPitCrew ? '✓' : '✗'} Full Pit Crew Assigned</span>
+                <small>
+                  {hasFullPitCrew
+                    ? 'All six pit crew roles are filled'
+                    : `${pitCrewRolesFilled.size} of ${REQUIRED_PIT_CREW_ROLES.length} pit crew roles filled`}
+                </small>
               </div>
             </div>
 
             <div className={styles.prepActions}>
-              <button className={styles.prepCancel} onClick={() => setShowRacePrep(false)}>Close</button>
               <button
-                className={styles.prepContinue}
-                disabled={!prepReady}
+                className={styles.prepCancel}
                 onClick={() => {
-                  if (!prepReady) return
+                  setShowRacePrep(false)
+                }}
+              >
+                {prepReady ? 'Close' : 'Go Back'}
+              </button>
+              <button
+                className={prepReady ? styles.prepContinue : styles.prepContinueWarning}
+                onClick={() => {
                   setShowRacePrep(false)
                   navigate('/game/race')
                 }}
               >
-                Continue to Race Day
+                {prepReady ? 'Continue to Race Day' : 'Continue Anyway'}
               </button>
             </div>
           </div>

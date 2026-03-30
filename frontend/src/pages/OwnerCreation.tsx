@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './OwnerCreation.module.css'
-import { SaveSlotData, Manufacturer } from '../types'
+import { SaveSlotData, Manufacturer, Series } from '../types'
 import { getFirstEmptySlotId, saveSlot, setActiveSlotId } from '../services/saveManager'
+import { getScheduleForYear } from '../data/schedule'
+import { getReservedCarNumbersForSeries } from '../data/aiTeams'
 
 const NATIONALITIES = [
   'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola',
@@ -169,6 +171,12 @@ const STARTING_MONEY_OPTIONS = [
   { value: 50000000, label: '$50M — Unlimited' },
 ]
 
+const PENDING_SERIES_KEY = 'pendingNewCareerSeries'
+
+function sanitizeCarNumber(value: string): string {
+  return value.replace(/\D/g, '').slice(0, 2)
+}
+
 function getDaysInMonth(month: number, year: number): number {
   return new Date(year, month, 0).getDate()
 }
@@ -216,6 +224,8 @@ const OwnerCreation: React.FC = () => {
   const cityRef = useRef<HTMLDivElement | null>(null)
   const [manufacturer, setManufacturer] = useState<Manufacturer | ''>('')
   const [startingMoney, setStartingMoney] = useState(2500000)
+  const [selectedSeries, setSelectedSeries] = useState<Series | null>(null)
+  const [carNumbers, setCarNumbers] = useState<string[]>([''])
 
   const age = birthMonth > 0 && birthDay > 0 && birthYear > 0
     ? calculateAge(birthMonth, birthDay, birthYear)
@@ -232,6 +242,24 @@ const OwnerCreation: React.FC = () => {
   }, [birthMonth, birthYear, maxDay, birthDay])
 
   useEffect(() => {
+    const rawSeries = localStorage.getItem(PENDING_SERIES_KEY)
+    if (!rawSeries) {
+      navigate('/new-career', { replace: true })
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(rawSeries) as Series
+      if (!parsed?.id) {
+        navigate('/new-career', { replace: true })
+        return
+      }
+      setSelectedSeries(parsed)
+    } catch {
+      navigate('/new-career', { replace: true })
+      return
+    }
+
     const handleClickOutside = (e: MouseEvent) => {
       if (natRef.current && !natRef.current.contains(e.target as Node)) setNatOpen(false)
       if (monthRef.current && !monthRef.current.contains(e.target as Node)) setMonthOpen(false)
@@ -246,13 +274,27 @@ const OwnerCreation: React.FC = () => {
         window.clearTimeout(backTimerRef.current)
       }
     }
-  }, [])
+  }, [navigate])
+
+  const maxCarEntries = selectedSeries?.id === 3 ? 4 : 1
+  const reservedNumbers = selectedSeries ? getReservedCarNumbersForSeries(selectedSeries.id) : []
+  const activeCarNumbers = carNumbers.map((n) => sanitizeCarNumber(n)).filter((n) => n.length > 0)
+  const duplicatePlayerNumber = activeCarNumbers.find((n, idx) => activeCarNumbers.indexOf(n) !== idx)
+  const reservedConflictNumber = activeCarNumbers.find((n) => reservedNumbers.includes(n))
+  const hasPrimaryCarNumber = /^\d{1,2}$/.test(sanitizeCarNumber(carNumbers[0] ?? ''))
+  const carNumberError = !hasPrimaryCarNumber
+    ? 'Enter a valid primary car number (0-99).'
+    : duplicatePlayerNumber
+      ? `You entered #${duplicatePlayerNumber} more than once. Car numbers must be unique.`
+      : reservedConflictNumber
+        ? `#${reservedConflictNumber} is already used in this series. Pick a different number.`
+        : ''
 
   const handleBackClick = () => {
     if (toMenu) return
     setToMenu(true)
     backTimerRef.current = window.setTimeout(() => {
-      navigate('/')
+      navigate('/new-career')
     }, 400)
   }
 
@@ -269,10 +311,13 @@ const OwnerCreation: React.FC = () => {
     teamName.trim().length > 0 &&
     teamCity.length > 0 &&
     manufacturer !== '' &&
-    startingMoney > 0
+    startingMoney > 0 &&
+    selectedSeries !== null &&
+    carNumberError === ''
 
   const handleContinue = () => {
     if (!isFormValid) return
+    if (!selectedSeries) return
 
     const emptySlotId = getFirstEmptySlotId()
     if (emptySlotId === null) {
@@ -280,10 +325,20 @@ const OwnerCreation: React.FC = () => {
       return
     }
 
+    const chosenCarNumbers = carNumbers
+      .map((n) => sanitizeCarNumber(n))
+      .filter((n) => n.length > 0)
+      .slice(0, maxCarEntries)
+    if (chosenCarNumbers.length === 0) {
+      setSlotError('Enter at least one valid car number to continue.')
+      return
+    }
+
     const saveData: SaveSlotData = {
       slotId: emptySlotId,
       createdAt: new Date().toISOString(),
       lastPlayedAt: new Date().toISOString(),
+      selectedSeries,
       owner: {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -294,7 +349,7 @@ const OwnerCreation: React.FC = () => {
       },
       selectedTeam: {
         id: 1,
-        series_id: 0,
+        series_id: selectedSeries.id,
         name: teamName.trim(),
         founded_year: 2026,
         base_city: teamCity,
@@ -312,7 +367,7 @@ const OwnerCreation: React.FC = () => {
       currentSeason: currentYear,
       totalChampionships: 0,
       totalWins: 0,
-      carNumber: '1',
+      carNumber: chosenCarNumbers[0],
       maxAge: 65,
       hiredPitCrew: [],
       hiredDrivers: [],
@@ -325,7 +380,11 @@ const OwnerCreation: React.FC = () => {
       seasonPhase: 'preseason',
       driverChampionshipEarnings: 0,
       ownerChampionshipEarnings: 0,
-      carEntries: [],
+      activeSchedule: getScheduleForYear(selectedSeries.id, currentYear),
+      carEntries: chosenCarNumbers.map((num) => ({
+        carNumber: num,
+        pitCrew: [],
+      })),
       orgStats: {
         championshipWins: 0,
         raceWins: 0,
@@ -339,7 +398,8 @@ const OwnerCreation: React.FC = () => {
 
     saveSlot(saveData)
     setActiveSlotId(emptySlotId)
-    navigate('/series-select')
+    localStorage.removeItem(PENDING_SERIES_KEY)
+    navigate('/game')
   }
 
   const dayOptions: number[] = []
@@ -362,7 +422,7 @@ const OwnerCreation: React.FC = () => {
         </button>
         <div className={styles.headerText}>
           <h1 className={styles.title}>New Career</h1>
-          <p className={styles.subtitle}>Create your owner identity and team.</p>
+          <p className={styles.subtitle}>Create your owner identity and team for {selectedSeries?.name ?? 'your selected series'}.</p>
         </div>
       </div>
 
@@ -595,6 +655,56 @@ const OwnerCreation: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label className={styles.label}>Car Numbers {selectedSeries?.id === 3 ? '(up to 4)' : ''}</label>
+              <div className={styles.numberList}>
+                {carNumbers.slice(0, maxCarEntries).map((num, idx) => (
+                  <div key={`car-num-${idx}`} className={styles.numberRow}>
+                    <input
+                      className={styles.input}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={2}
+                      placeholder={`Car #${idx + 1}`}
+                      value={num}
+                      onChange={(e) => {
+                        const next = [...carNumbers]
+                        next[idx] = sanitizeCarNumber(e.target.value)
+                        setCarNumbers(next)
+                        if (slotError) setSlotError('')
+                      }}
+                    />
+                    {idx > 0 && (
+                      <button
+                        type="button"
+                        className={styles.numberRemoveBtn}
+                        onClick={() => {
+                          const next = carNumbers.filter((_, i) => i !== idx)
+                          setCarNumbers(next.length > 0 ? next : [''])
+                        }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {selectedSeries?.id === 3 && carNumbers.length < maxCarEntries && (
+                <button
+                  type="button"
+                  className={styles.numberAddBtn}
+                  onClick={() => setCarNumbers((prev) => [...prev, ''])}
+                >
+                  + Add Car Number
+                </button>
+              )}
+
+              {carNumberError && <div className={styles.numberError}>{carNumberError}</div>}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -604,7 +714,7 @@ const OwnerCreation: React.FC = () => {
           disabled={!isFormValid}
           onClick={handleContinue}
         >
-          Continue to Series Selection →
+          Start Career →
         </button>
       </div>
 

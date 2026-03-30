@@ -23,6 +23,47 @@
   color: var(--text-muted);
 }
 
+.carSelector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.carCard {
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
+  padding: 0.7rem 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.carCard:hover {
+  border-color: var(--border-color-hover);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.carCardActive {
+  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.carCardNumber {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.carCardMeta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 /* Two-column layout */
 .content {
   display: grid;
@@ -287,6 +328,27 @@
   padding: 0.1rem 0.5rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
+}
+
+.sharedTag,
+.lockedTag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.sharedTag {
+  color: #64b5f6;
+  border-color: #64b5f6;
+}
+
+.lockedTag {
+  color: #9fa8da;
+  border-color: #9fa8da;
 }
 
 .deleteBtn {
@@ -654,6 +716,51 @@
 .scrapConfirm:hover {
   background: #f44336;
   color: #fff;
+}
+
+.lockModal {
+  background: var(--bg-secondary);
+  border: 2px solid #ff9800;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  max-width: 460px;
+  width: 90%;
+  text-align: center;
+}
+
+.lockTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+  color: #ffb74d;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lockText {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.lockConfirm {
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  background: transparent;
+  border: 2px solid #ff9800;
+  color: #ff9800;
+}
+
+.lockConfirm:hover {
+  background: #ff9800;
+  color: #111;
 }
 
 @media (max-width: 768px) {

@@ -55,6 +55,15 @@
 .hiredInfo { display: flex; flex-direction: column; gap: 0.1rem; }
 .hiredLabel { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
 .hiredName { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+.hiredCar {
+  width: fit-content;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #90caf9;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #90caf9;
+  border-radius: var(--radius-sm);
+}
 .hiredSalary { font-size: 0.75rem; color: #4caf50; }
 .releaseBtn {
   background: transparent;
@@ -148,9 +157,29 @@
   margin: 0 0 0.5rem;
 }
 .pitRoster { margin-bottom: 1rem; }
+.carRosterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.75rem;
+}
+
+.pitCarBlock {
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 0.65rem;
+}
+
+.pitCarHeader {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
 .pitSlots {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: 1fr;
   gap: 0.5rem;
 }
 .pitSlot {
@@ -215,8 +244,84 @@
 }
 .filterBtn.active { border-color: var(--text-primary); color: var(--text-primary); }
 
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.hireModal {
+  width: 92%;
+  max-width: 430px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+}
+
+.modalTitle {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+
+.modalText {
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.modalRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.95rem;
+}
+
+.modalLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.modalSelect {
+  min-height: 34px;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.modalSelect:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modalActions .hireSmBtn {
+  margin-top: 0;
+}
+
 @media (max-width: 768px) {
   .grid { grid-template-columns: 1fr; }
   .pitSlots { grid-template-columns: 1fr; }
+  .carRosterGrid { grid-template-columns: 1fr; }
   .tabs { flex-wrap: wrap; }
 }

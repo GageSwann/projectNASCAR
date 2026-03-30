@@ -218,6 +218,7 @@ export type ItemCategory = 'engine' | 'suspension' | 'aerodynamics' | 'brakes' |
 export interface Chassis {
   id: string;
   name: string;
+  carNumber?: string; // which player car this chassis belongs to
   series_id: number;
   trackType: TrackType; // which track type this chassis is built for
   status: ChassisStatus;

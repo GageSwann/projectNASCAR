@@ -31,6 +31,14 @@
 .currentLabel { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
 .currentName { font-weight: 700; font-size: 1rem; color: var(--text-primary); }
 .currentSalary { font-size: 0.8rem; color: #4caf50; }
+.currentCar {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #90caf9;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #90caf9;
+  border-radius: var(--radius-sm);
+}
 .hiredDriverRow {
   display: flex;
   align-items: center;
@@ -220,6 +228,94 @@
 }
 .hireBtn:hover { color: var(--bg-primary); }
 .hireBtn:hover::after { left: 0; }
+
+.hireBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.hireBtn:disabled::after {
+  display: none;
+}
+
+.hireBtn:disabled:hover {
+  color: var(--text-primary);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.hireModal {
+  width: 92%;
+  max-width: 440px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.15rem;
+}
+
+.modalTitle {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+
+.modalText {
+  margin: 0 0 0.9rem;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.modalRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.modalLabel {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.modalSelect {
+  min-height: 34px;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.modalSelect:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.modalActions .hireBtn {
+  margin-top: 0;
+}
 
 .signedBadge {
   margin-top: 1.25rem;

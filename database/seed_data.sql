@@ -103,45 +103,84 @@ INSERT INTO teams (series_id, name, founded_year, base_city, budget, reputation,
 -- CUP SERIES TEAMS (series_id = 3)
 -- ============================================================
 INSERT INTO teams (series_id, name, founded_year, base_city, budget, reputation, garage_rating, headquarters) VALUES
-(3, 'Velocity Racing', 1995, 'Charlotte, NC', 25000000, 95, 95, 'Charlotte, NC'),
-(3, 'Legacy Motorsports', 1988, 'Concord, NC', 24000000, 93, 94, 'Concord, NC'),
-(3, 'Elite Performance', 2000, 'Charlotte, NC', 23500000, 92, 93, 'Charlotte, NC'),
-(3, 'Thunder Motors', 1992, 'Mooresville, NC', 23000000, 91, 91, 'Mooresville, NC'),
-(3, 'Apex Racing', 1998, 'Charlotte, NC', 22500000, 90, 90, 'Charlotte, NC'),
-(3, 'Overdrive Motorsports', 2005, 'Charlotte, NC', 18000000, 75, 78, 'Charlotte, NC'),
-(3, 'Apex Grand Racing', 2002, 'Concord, NC', 17500000, 74, 76, 'Concord, NC'),
-(3, 'Ironclad Motorsports', 2001, 'Mooresville, NC', 17000000, 73, 75, 'Mooresville, NC'),
-(3, 'Titanium Racing', 2008, 'Charlotte, NC', 16500000, 72, 74, 'Charlotte, NC'),
-(3, 'Vanguard Racing', 2007, 'Concord, NC', 16000000, 71, 72, 'Concord, NC'),
-(3, 'Spectra Racing', 2010, 'Charlotte, NC', 12000000, 55, 58, 'Charlotte, NC'),
-(3, 'Radiant Motorsports', 2009, 'Mooresville, NC', 11500000, 54, 57, 'Mooresville, NC'),
-(3, 'Prism Racing', 2011, 'Charlotte, NC', 11000000, 53, 56, 'Charlotte, NC'),
-(3, 'Meridian Racing', 2012, 'Concord, NC', 10500000, 52, 55, 'Concord, NC'),
-(3, 'Equinox Motorsports', 2013, 'Charlotte, NC', 10000000, 51, 54, 'Charlotte, NC'),
-(3, 'Wolfpack Racing', 2015, 'Mooresville, NC', 8500000, 40, 42, 'Mooresville, NC'),
-(3, 'Torque Motorsports', 2014, 'Charlotte, NC', 8000000, 39, 41, 'Charlotte, NC'),
-(3, 'Redline Racing', 2016, 'Concord, NC', 7500000, 38, 40, 'Concord, NC'),
-(3, 'Carbon Fiber Racing', 2017, 'Charlotte, NC', 7000000, 37, 39, 'Charlotte, NC'),
-(3, 'Titan Racing', 2018, 'Mooresville, NC', 6500000, 36, 38, 'Mooresville, NC'),
-(3, 'Genesis Racing', 2019, 'Charlotte, NC', 5500000, 25, 28, 'Charlotte, NC'),
-(3, 'Pioneer Motorsports', 2020, 'Concord, NC', 5000000, 20, 25, 'Concord, NC'),
-(3, 'Bootstrap Racing', 2021, 'Charlotte, NC', 4500000, 15, 20, 'Charlotte, NC'),
-(3, 'Rising Star Motors', 2022, 'Mooresville, NC', 4000000, 12, 18, 'Mooresville, NC'),
-(3, 'Underdog Racing', 2023, 'Charlotte, NC', 3500000, 10, 15, 'Charlotte, NC'),
-(3, 'Scrappy Racing', 2024, 'Concord, NC', 3000000, 8, 12, 'Concord, NC'),
-(3, 'Grind House Racing', 2025, 'Charlotte, NC', 2500000, 5, 10, 'Charlotte, NC'),
-(3, 'Raw Speed Motorsports', 2024, 'Mooresville, NC', 2000000, 3, 8, 'Mooresville, NC'),
-(3, 'Last Chance Motors', 2025, 'Charlotte, NC', 1500000, 2, 5, 'Charlotte, NC'),
-(3, 'Dream Chasers Racing', 2025, 'Concord, NC', 1000000, 1, 3, 'Concord, NC');
+(3, '23XI Racing', 2021, 'Huntersville, NC', 23000000, 90, 90, 'Huntersville, NC'),
+(3, 'Front Row Motorsports', 2005, 'Mooresville, NC', 12000000, 72, 74, 'Mooresville, NC'),
+(3, 'Haas Factory Team', 2025, 'Kannapolis, NC', 8500000, 62, 64, 'Kannapolis, NC'),
+(3, 'Hendrick Motorsports', 1984, 'Concord, NC', 26000000, 96, 96, 'Concord, NC'),
+(3, 'Hyak Motorsports', 2025, 'Concord, NC', 7000000, 58, 60, 'Concord, NC'),
+(3, 'Joe Gibbs Racing', 1992, 'Huntersville, NC', 25500000, 95, 95, 'Huntersville, NC'),
+(3, 'Kaulig Racing', 2016, 'Lexington, NC', 10500000, 70, 72, 'Lexington, NC'),
+(3, 'Legacy Motor Club', 1992, 'Statesville, NC', 13500000, 76, 78, 'Statesville, NC'),
+(3, 'Richard Childress Racing', 1969, 'Welcome, NC', 17000000, 84, 85, 'Welcome, NC'),
+(3, 'Rick Ware Racing', 1998, 'Mooresville, NC', 6500000, 55, 58, 'Mooresville, NC'),
+(3, 'RFK Racing', 1969, 'Concord, NC', 18000000, 86, 86, 'Concord, NC'),
+(3, 'Spire Motorsports', 2018, 'Mooresville, NC', 14500000, 77, 79, 'Mooresville, NC'),
+(3, 'Trackhouse', 2021, 'Concord, NC', 18500000, 87, 88, 'Concord, NC'),
+(3, 'Team Penske', 1966, 'Mooresville, NC', 24500000, 94, 94, 'Mooresville, NC'),
+(3, 'Wood Brothers Racing', 1950, 'Stuart, VA', 9000000, 68, 70, 'Stuart, VA');
 
--- Insert Cars (one per team)
+-- Insert Cars for Trucks/O'Reilly (one per team)
 INSERT INTO cars (team_id, number, name, year, condition, speed_rating, handling_rating, reliability_rating, aerodynamics_rating)
-SELECT id, ROW_NUMBER() OVER ()::VARCHAR, name || ' #' || ROW_NUMBER() OVER (), 2026, 'good',
+SELECT id, ROW_NUMBER() OVER (PARTITION BY series_id ORDER BY id)::VARCHAR, name || ' #' || ROW_NUMBER() OVER (PARTITION BY series_id ORDER BY id), 2026, 'good',
   50 + (reputation - 50) / 2,
   50 + (reputation - 50) / 2,
   50 + (garage_rating - 50) / 2,
   50 + (reputation - 50) / 2
-FROM teams;
+FROM teams
+WHERE series_id IN (1, 2);
+
+-- Insert Cars for Cup teams (real car numbers)
+INSERT INTO cars (team_id, number, name, year, condition, speed_rating, handling_rating, reliability_rating, aerodynamics_rating)
+SELECT
+       t.id,
+       cup.number,
+       t.name || ' #' || cup.number,
+       2026,
+       'good',
+       50 + (t.reputation - 50) / 2,
+       50 + (t.reputation - 50) / 2,
+       50 + (t.garage_rating - 50) / 2,
+       50 + (t.reputation - 50) / 2
+FROM (
+       VALUES
+              ('23XI Racing', '23'),
+              ('23XI Racing', '35'),
+              ('23XI Racing', '45'),
+              ('Front Row Motorsports', '4'),
+              ('Front Row Motorsports', '34'),
+              ('Front Row Motorsports', '38'),
+              ('Haas Factory Team', '41'),
+              ('Hendrick Motorsports', '5'),
+              ('Hendrick Motorsports', '9'),
+              ('Hendrick Motorsports', '24'),
+              ('Hendrick Motorsports', '48'),
+              ('Hyak Motorsports', '47'),
+              ('Joe Gibbs Racing', '11'),
+              ('Joe Gibbs Racing', '19'),
+              ('Joe Gibbs Racing', '20'),
+              ('Joe Gibbs Racing', '54'),
+              ('Kaulig Racing', '10'),
+              ('Kaulig Racing', '16'),
+              ('Legacy Motor Club', '42'),
+              ('Legacy Motor Club', '43'),
+              ('Richard Childress Racing', '3'),
+              ('Richard Childress Racing', '8'),
+              ('Rick Ware Racing', '51'),
+              ('RFK Racing', '6'),
+              ('RFK Racing', '17'),
+              ('RFK Racing', '60'),
+              ('Spire Motorsports', '7'),
+              ('Spire Motorsports', '71'),
+              ('Spire Motorsports', '77'),
+              ('Trackhouse', '1'),
+              ('Trackhouse', '88'),
+              ('Trackhouse', '97'),
+              ('Team Penske', '2'),
+              ('Team Penske', '12'),
+              ('Team Penske', '22'),
+              ('Wood Brothers Racing', '21')
+) AS cup(team_name, number)
+JOIN teams t ON t.name = cup.team_name AND t.series_id = 3;
 
 -- Insert primary drivers (1 per team)
 INSERT INTO drivers (first_name, last_name, number, team_id, car_id, status, age, experience, skill_rating, consistency_rating, racecraft_rating)
@@ -193,7 +232,7 @@ SELECT
          'Sparks', 'Crane', 'Holt', 'Chase', 'Storm', 'Blaze', 'Hawk', 'Arrow', 'Slate', 'Ridge',
          'Valley', 'Brook', 'Canyon', 'Harbor', 'Rivers', 'Stone', 'Drake', 'Fox', 'Raven', 'Eagle',
          'Lyon', 'North', 'West', 'East', 'Atlas'])[((ROW_NUMBER() OVER () - 1) % 75) + 1],
-  (75 + ROW_NUMBER() OVER ())::VARCHAR,
+       ((SELECT COUNT(*) FROM cars) + ROW_NUMBER() OVER ())::VARCHAR,
   t.id,
   c.id,
   'active',

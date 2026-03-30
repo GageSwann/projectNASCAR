@@ -226,9 +226,10 @@ const RaceDay: React.FC = () => {
 
   // Readiness checks
   const hasDriver = !!saveData.hiredDriver
-  const matchingChassis = saveData.chassis.find(c => c.trackType === trackType && isChassisRaceReady(c))
+  const activeCarNumber = saveData.carNumber || '1'
+  const matchingChassis = saveData.chassis.find(c => c.carNumber === activeCarNumber && c.trackType === trackType && isChassisRaceReady(c))
   const hasChassis = !!matchingChassis
-  const hasAnyChassis = saveData.chassis.some(c => isChassisRaceReady(c))
+  const hasAnyChassis = saveData.chassis.some(c => c.carNumber === activeCarNumber && isChassisRaceReady(c))
 
   // Check if all installed parts on the matching chassis are fully installed
   const hasUnfinishedParts = matchingChassis?.installedParts.some(
@@ -289,15 +290,38 @@ const RaceDay: React.FC = () => {
     })
   }, [saveData, race.track, race.round, playerEligibleForRace, duelDriverIds, requiresManualQualifying, manualQualifyingSkipped])
 
+  const preQualifyingOrder = useMemo(() => {
+    if (race.isExhibition) {
+      return [...lineupSession.entries]
+        .sort((a, b) => {
+          const aNum = Number(a.carNumber)
+          const bNum = Number(b.carNumber)
+          if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aNum !== bNum) return aNum - bNum
+          return a.carNumber.localeCompare(b.carNumber)
+        })
+        .map((entry) => entry.driverId)
+    }
+
+    const presentDriverIds = new Set(lineupSession.entries.map((entry) => entry.driverId))
+    const standingsOrder = (saveData.standings ?? [])
+      .filter((entry) => presentDriverIds.has(entry.driverId))
+      .map((entry) => entry.driverId)
+
+    const remaining = lineupSession.entries
+      .filter((entry) => !standingsOrder.includes(entry.driverId))
+      .sort((a, b) => a.driverName.localeCompare(b.driverName))
+      .map((entry) => entry.driverId)
+
+    return [...standingsOrder, ...remaining]
+  }, [lineupSession.entries, race.isExhibition, saveData.standings])
+
   const lineupRows = useMemo(() => {
     const byId = new Map(lineupSession.entries.map((e) => [e.driverId, e]))
     const preferredOrder = currentDuelNo
       ? (currentDuelNo === 1 ? (saveData.daytonaSpeedweeks?.duel1DriverIds ?? lineupSession.order) : (saveData.daytonaSpeedweeks?.duel2DriverIds ?? lineupSession.order))
       : isDaytona500(race)
         ? (saveData.daytonaSpeedweeks?.daytona500LineupDriverIds ?? lineupSession.order)
-        : requiresManualQualifying
-          ? (manualQualifyingOrder ?? lineupSession.order)
-          : lineupSession.order
+        : (manualQualifyingOrder ?? preQualifyingOrder)
 
     return preferredOrder
       .map((driverId, index) => {
@@ -318,8 +342,10 @@ const RaceDay: React.FC = () => {
         return null
       })
       .filter((row): row is NonNullable<typeof row> => !!row)
-  }, [lineupSession, currentDuelNo, saveData.daytonaSpeedweeks, saveData.hiredDriver, saveData.selectedTeam, saveData.carNumber, race, requiresManualQualifying, manualQualifyingOrder])
+  }, [lineupSession, currentDuelNo, saveData.daytonaSpeedweeks, saveData.hiredDriver, saveData.selectedTeam, saveData.carNumber, race, manualQualifyingOrder, preQualifyingOrder])
   const showQualifyingTimes = requiresManualQualifying && manualQualifyingOrder !== null && !manualQualifyingSkipped
+  const hasStartingGrid = currentDuelNo !== null || isDaytona500(race) || manualQualifyingOrder !== null
+  const lineupGridTemplate = showQualifyingTimes ? '50px 1fr 1fr 70px 90px 80px' : '50px 1fr 1fr 70px 80px'
 
   const simulateAndSave = () => {
     if (!ready) return
@@ -683,27 +709,27 @@ const RaceDay: React.FC = () => {
           <div className={styles.resultsTable}>
             <div
               className={styles.resultsHeader}
-              style={{ gridTemplateColumns: showQualifyingTimes ? '50px 1fr 1fr 70px 90px 80px' : '50px 1fr 1fr 70px 60px 80px' }}
+              style={{ gridTemplateColumns: lineupGridTemplate }}
             >
               <span className={styles.rCol1}>Start</span>
               <span className={styles.rCol2}>Driver</span>
               <span className={styles.rCol3}>Team</span>
               <span className={styles.rCol4}>Car</span>
               <span className={styles.rCol5}>{showQualifyingTimes ? 'Q Lap' : 'Mfr'}</span>
-              <span className={styles.rCol6}>{showQualifyingTimes ? 'Mfr' : 'Tag'}</span>
+              {showQualifyingTimes && <span className={styles.rCol6}>Mfr</span>}
             </div>
             {lineupRows.map((row) => (
               <div
                 key={`lineup-${row.driverId}-${row.startPos}`}
                 className={`${styles.resultsRow} ${row.isPlayer ? styles.playerRow : ''}`}
-                style={{ gridTemplateColumns: showQualifyingTimes ? '50px 1fr 1fr 70px 90px 80px' : '50px 1fr 1fr 70px 60px 80px' }}
+                style={{ gridTemplateColumns: lineupGridTemplate }}
               >
-                <span className={styles.rCol1}><span className={styles.posNum}>P{row.startPos}</span></span>
+                <span className={styles.rCol1}><span className={styles.posNum}>{hasStartingGrid ? `P${row.startPos}` : '-'}</span></span>
                 <span className={styles.rCol2}>{row.driverName}</span>
                 <span className={styles.rCol3}>{row.teamName}</span>
                 <span className={styles.rCol4}>#{row.carNumber}</span>
                 <span className={styles.rCol5}>{showQualifyingTimes ? formatLapTime(row.lapTime) : row.manufacturer}</span>
-                <span className={styles.rCol6}>{showQualifyingTimes ? row.manufacturer : (row.isPlayer ? 'You' : '')}</span>
+                {showQualifyingTimes && <span className={styles.rCol6}>{row.manufacturer}</span>}
               </div>
             ))}
           </div>

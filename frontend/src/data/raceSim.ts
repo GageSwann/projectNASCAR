@@ -111,9 +111,12 @@ function computePlayerStats(save: SaveSlotData, trackType: TrackType): EntrantSt
   const cc = save.hiredCrewChief
   const spotter = save.hiredSpotter
   const pitCrew = save.hiredPitCrew
+  const activeCarNumber = save.carNumber || '1'
 
-  const car = computeCarRating(save.chassis.find(c => c.status === 'ready' && c.trackType === trackType)
-    ?? save.chassis.find(c => c.status === 'ready'))
+  const car = computeCarRating(
+    save.chassis.find(c => c.carNumber === activeCarNumber && c.status === 'ready' && c.trackType === trackType)
+    ?? save.chassis.find(c => c.carNumber === activeCarNumber && c.status === 'ready')
+  )
 
   // Driver contribution: 40% of total
   const trackBonus = getDriverTrackBonus(driver, trackType)

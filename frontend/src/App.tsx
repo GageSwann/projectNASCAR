@@ -42,8 +42,9 @@ function App() {
           <div className="appContent">
             <Routes>
               <Route path="/" element={<MainMenu />} />
-              <Route path="/new-career" element={<OwnerCreation />} />
+              <Route path="/new-career" element={<SeriesSelect />} />
               <Route path="/series-select" element={<SeriesSelect />} />
+              <Route path="/owner-creation" element={<OwnerCreation />} />
               <Route path="/careers" element={<CareerSelect />} />
               <Route path="/load-career" element={<LoadCareer />} />
               <Route path="/game" element={<GameLayout />}>

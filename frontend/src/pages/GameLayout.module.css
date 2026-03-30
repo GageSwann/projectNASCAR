@@ -10,9 +10,11 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
   background: rgba(0, 0, 0, 0.35);
   border-right: 2px solid var(--border-color);
-  transition: width 0.3s ease, opacity 0.3s ease;
   overflow: hidden;
   animation: slideIn var(--page-enter-duration) var(--page-enter-ease) both;
 }
@@ -28,15 +30,11 @@
   }
 }
 
-.sidebar.collapsed {
-  width: 0;
-  border-right: none;
-}
-
 /* Header inside sidebar */
 .sidebarHeader {
   padding: 1.5rem 1.25rem 1rem;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .teamBranding {
@@ -85,10 +83,12 @@
 /* Navigation */
 .nav {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: 0.75rem 0;
   gap: 2px;
+  overflow-y: hidden;
 }
 
 .navItem {
@@ -130,6 +130,8 @@
 .sidebarFooter {
   padding: 1rem 1.25rem 1.25rem;
   border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .seasonInfo {
@@ -161,37 +163,6 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-/* Toggle button */
-.sidebarToggle {
-  position: fixed;
-  top: 12px;
-  left: 264px;
-  z-index: 20;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 0.65rem;
-  cursor: pointer;
-  transition: left 0.3s ease, color 0.2s ease;
-}
-
-.sidebar.collapsed ~ .sidebarToggle,
-.collapsed ~ .sidebarToggle {
-  /* This won't work with sibling selector across the DOM.
-     Handled inline via JS instead. */
-}
-
-.sidebarToggle:hover {
-  color: var(--text-primary);
-  border-color: var(--text-primary);
-}
-
 /* Main content area */
 .main {
   flex: 1;
@@ -208,23 +179,16 @@
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
   .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    z-index: 30;
-  }
-
-  .sidebar.collapsed {
-    width: 0;
-  }
-
-  .sidebarToggle {
-    left: 8px;
-    top: 8px;
+    width: 220px;
   }
 
   .main {
     padding: 1rem;
+  }
+}
+
+@media (max-height: 820px) {
+  .nav {
+    overflow-y: auto;
   }
 }

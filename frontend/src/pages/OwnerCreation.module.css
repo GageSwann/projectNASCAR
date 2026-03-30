@@ -543,6 +543,50 @@
   color: var(--bg-primary);
 }
 
+.numberList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.numberRow {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.numberAddBtn,
+.numberRemoveBtn {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: transparent;
+  border: 2px solid var(--text-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.numberAddBtn {
+  margin-top: 0.6rem;
+}
+
+.numberAddBtn:hover,
+.numberRemoveBtn:hover {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.numberError {
+  margin-top: 0.55rem;
+  font-size: 0.82rem;
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
 :global([data-theme="light"]) .moneyBtn {
   background: #ffffff;
   border-color: #000000;

@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './SeriesSelect.module.css'
 import { Series } from '../types'
-import { getActiveSlotId, loadSlot, saveSlot } from '../services/saveManager'
-import { getScheduleForYear } from '../data/schedule'
 
 const SERIES_DATA: Series[] = [
   {
@@ -33,6 +31,7 @@ const SERIES_DATA: Series[] = [
 ]
 
 const TEAM_COUNTS: Record<number, number> = { 1: 20, 2: 25, 3: 30 }
+const PENDING_SERIES_KEY = 'pendingNewCareerSeries'
 
 const SeriesSelect: React.FC = () => {
   const navigate = useNavigate()
@@ -49,27 +48,17 @@ const SeriesSelect: React.FC = () => {
   const handleBackClick = () => {
     if (toMenu) return
     setToMenu(true)
-    backTimerRef.current = window.setTimeout(() => navigate('/new-career'), 400)
+    backTimerRef.current = window.setTimeout(() => navigate('/'), 400)
   }
 
   const handleContinue = () => {
     if (selected === null) return
 
-    const slotId = getActiveSlotId()
-    if (!slotId) return
-
-    const slot = loadSlot(slotId)
-    if (!slot) return
-
     const series = SERIES_DATA.find((s) => s.id === selected)
     if (!series) return
 
-    slot.selectedSeries = series
-    slot.activeSchedule = getScheduleForYear(series.id, slot.currentSeason ?? new Date().getFullYear())
-    slot.lastPlayedAt = new Date().toISOString()
-    saveSlot(slot)
-
-    navigate('/game')
+    localStorage.setItem(PENDING_SERIES_KEY, JSON.stringify(series))
+    navigate('/owner-creation')
   }
 
   return (
@@ -105,7 +94,7 @@ const SeriesSelect: React.FC = () => {
           disabled={selected === null}
           onClick={handleContinue}
         >
-          Start Career →
+          Continue →
         </button>
       </div>
 

@@ -17,6 +17,8 @@ export interface AITeamDef {
   tier: 'elite' | 'top' | 'mid' | 'low' | 'backmarker'
   /** How many cars this team fields (1-4) */
   carCount: number
+  /** Optional explicit car numbers for the team */
+  carNumbers?: string[]
 }
 
 export interface AICarEntry {
@@ -99,22 +101,23 @@ const XFINITY_TEAMS: AITeamDef[] = [
   { name: 'Forge Motorsports',         manufacturer: 'Ford',      tier: 'backmarker', carCount: 1 },
 ]
 
-// Cup Series: 14 teams, ~28 cars
+// Cup Series: real teams and car numbers
 const CUP_TEAMS: AITeamDef[] = [
-  { name: 'Velocity Racing',           manufacturer: 'Chevrolet', tier: 'elite', carCount: 4 },
-  { name: 'Legacy Motorsports',        manufacturer: 'Toyota',    tier: 'elite', carCount: 3 },
-  { name: 'Elite Performance',         manufacturer: 'Ford',      tier: 'elite', carCount: 2 },
-  { name: 'Thunder Motors',            manufacturer: 'Chevrolet', tier: 'top',   carCount: 2 },
-  { name: 'Apex Racing',               manufacturer: 'Toyota',    tier: 'top',   carCount: 2 },
-  { name: 'Overdrive Motorsports',     manufacturer: 'Ford',      tier: 'mid',   carCount: 2 },
-  { name: 'Apex Grand Racing',         manufacturer: 'Chevrolet', tier: 'mid',   carCount: 2 },
-  { name: 'Ironclad Motorsports',      manufacturer: 'Toyota',    tier: 'mid',   carCount: 2 },
-  { name: 'Titanium Racing',           manufacturer: 'Ford',      tier: 'mid',   carCount: 2 },
-  { name: 'Vanguard Racing',           manufacturer: 'Chevrolet', tier: 'low',   carCount: 2 },
-  { name: 'Spectra Racing',            manufacturer: 'Toyota',    tier: 'low',   carCount: 1 },
-  { name: 'Radiant Motorsports',       manufacturer: 'Ford',      tier: 'backmarker', carCount: 1 },
-  { name: 'Prism Racing',              manufacturer: 'Chevrolet', tier: 'backmarker', carCount: 1 },
-  { name: 'Meridian Racing',           manufacturer: 'Toyota',    tier: 'backmarker', carCount: 1 },
+  { name: '23XI Racing',               manufacturer: 'Toyota',    tier: 'top',   carCount: 3, carNumbers: ['23', '35', '45'] },
+  { name: 'Front Row Motorsports',     manufacturer: 'Ford',      tier: 'mid',   carCount: 3, carNumbers: ['4', '34', '38'] },
+  { name: 'Haas Factory Team',         manufacturer: 'Ford',      tier: 'low',   carCount: 1, carNumbers: ['41'] },
+  { name: 'Hendrick Motorsports',      manufacturer: 'Chevrolet', tier: 'elite', carCount: 4, carNumbers: ['5', '9', '24', '48'] },
+  { name: 'Hyak Motorsports',          manufacturer: 'Chevrolet', tier: 'low',   carCount: 1, carNumbers: ['47'] },
+  { name: 'Joe Gibbs Racing',          manufacturer: 'Toyota',    tier: 'elite', carCount: 4, carNumbers: ['11', '19', '20', '54'] },
+  { name: 'Kaulig Racing',             manufacturer: 'Chevrolet', tier: 'mid',   carCount: 2, carNumbers: ['10', '16'] },
+  { name: 'Legacy Motor Club',         manufacturer: 'Toyota',    tier: 'mid',   carCount: 2, carNumbers: ['42', '43'] },
+  { name: 'Richard Childress Racing',  manufacturer: 'Chevrolet', tier: 'top',   carCount: 2, carNumbers: ['3', '8'] },
+  { name: 'Rick Ware Racing',          manufacturer: 'Chevrolet', tier: 'backmarker', carCount: 1, carNumbers: ['51'] },
+  { name: 'RFK Racing',                manufacturer: 'Ford',      tier: 'top',   carCount: 3, carNumbers: ['6', '17', '60'] },
+  { name: 'Spire Motorsports',         manufacturer: 'Chevrolet', tier: 'mid',   carCount: 3, carNumbers: ['7', '71', '77'] },
+  { name: 'Trackhouse',                manufacturer: 'Chevrolet', tier: 'top',   carCount: 3, carNumbers: ['1', '88', '97'] },
+  { name: 'Team Penske',               manufacturer: 'Ford',      tier: 'elite', carCount: 3, carNumbers: ['2', '12', '22'] },
+  { name: 'Wood Brothers Racing',      manufacturer: 'Ford',      tier: 'mid',   carCount: 1, carNumbers: ['21'] },
 ]
 
 export const AI_TEAMS: Record<number, AITeamDef[]> = {
@@ -123,11 +126,16 @@ export const AI_TEAMS: Record<number, AITeamDef[]> = {
   3: CUP_TEAMS,
 }
 
+export function getReservedCarNumbersForSeries(seriesId: number): string[] {
+  const teams = AI_TEAMS[seriesId] ?? []
+  return [...new Set(teams.flatMap((team) => team.carNumbers ?? []))]
+}
+
 // ---- Number pools per series (no duplicates within a series) ----
 const NUMBER_POOLS: Record<number, string[]> = {
   1: ['1','2','3','4','5','7','8','9','10','12','14','15','16','17','18','19','20','21','22','23','24','25','27','29','30','32','34','36','38','40','42','44','45','47','51','52','54','56','62','66','68','72','75','77','88','99'],
   2: ['1','2','3','4','5','7','8','9','10','11','16','18','19','20','21','22','23','26','27','31','33','36','38','39','44','45','48','51','54','55','68','77','81','88','98','99'],
-  3: ['1','2','3','4','5','6','7','8','9','10','11','12','14','15','17','18','19','20','21','22','23','24','25','27','31','34','38','41','42','43','45','47','48','51','54','62','77','78','99'],
+  3: ['1','2','3','4','5','6','7','8','9','10','11','12','14','15','16','17','18','19','20','21','22','23','24','25','27','31','34','35','38','41','42','43','45','47','48','51','54','60','62','71','77','78','88','97','99'],
 }
 
 /**
@@ -152,15 +160,38 @@ export function generateAIField(seriesId: number, excludeNumbers: Set<string> = 
 
   // Filter out player-reserved numbers
   const available = pool.filter(n => !excludeNumbers.has(n))
+  const usedNumbers = new Set<string>(excludeNumbers)
 
   const entries: AICarEntry[] = []
   let nameIdx = 0
   let numIdx = 0
 
+  const nextAvailableNumber = (): string | null => {
+    while (numIdx < available.length) {
+      const candidate = available[numIdx++]
+      if (usedNumbers.has(candidate)) continue
+      return candidate
+    }
+    return null
+  }
+
   for (const team of teams) {
-    for (let c = 0; c < team.carCount; c++) {
-      if (numIdx >= available.length) break
-      const carNum = available[numIdx++]
+    const teamNumbers: string[] = []
+
+    for (const n of team.carNumbers ?? []) {
+      if (usedNumbers.has(n)) continue
+      teamNumbers.push(n)
+      usedNumbers.add(n)
+    }
+
+    while (teamNumbers.length < team.carCount) {
+      const fallback = nextAvailableNumber()
+      if (!fallback) break
+      teamNumbers.push(fallback)
+      usedNumbers.add(fallback)
+    }
+
+    for (const carNum of teamNumbers) {
       const [firstName, lastName] = AI_DRIVER_NAMES[nameIdx % AI_DRIVER_NAMES.length]
       nameIdx++
 

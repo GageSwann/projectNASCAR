@@ -12,7 +12,6 @@ const formatBudget = (budget: number) => {
 const GameLayout: React.FC = () => {
   const [saveData, setSaveData] = useState<SaveSlotData | null>(null)
   const [loaded, setLoaded] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -44,7 +43,7 @@ const GameLayout: React.FC = () => {
 
   return (
     <div className={styles.layout}>
-      <aside className={`${styles.sidebar} ${sidebarOpen ? '' : styles.collapsed}`}>
+      <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
           <div className={styles.teamBranding}>
             <h2 className={styles.teamName}>{team.name}</h2>
@@ -143,14 +142,6 @@ const GameLayout: React.FC = () => {
           </button>
         </div>
       </aside>
-
-      <button
-        className={styles.sidebarToggle}
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-      >
-        {sidebarOpen ? '\u25C0' : '\u25B6'}
-      </button>
 
       <main className={styles.main}>
         <Outlet context={{ saveData, refreshSave } satisfies GameContext} />
